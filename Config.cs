@@ -9,9 +9,9 @@ namespace NovaLauncher
     {
         public static string baseUrl = "http://n.termy.lol/client/setup";
         public static string downloadCompleteUrl = "https://n.termy.lol/app/downloaded";
-#if VERSION
-        public static string Version = VERSION;
-        public static string RevName = "Novarin "+VERSION;
+#if CLIENT
+        public static string client = CLIENT;
+        public static string RevName = "Novarin "+CLIENT;
 #else
         public static string client = "2016";
         public static string RevName = "Novarin 2016";
