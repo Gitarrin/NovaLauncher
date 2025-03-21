@@ -9,10 +9,19 @@ namespace NovaLauncher
     {
         public static string baseUrl = "http://n.termy.lol/client/setup";
         public static string downloadCompleteUrl = "https://n.termy.lol/app/downloaded";
+#if VERSION
+        public static string Version = VERSION;
+        public static string RevName = "Novarin "+VERSION;
+#else
         public static string client = "2016";
+        public static string RevName = "Novarin 2016";
+#endif
+#if PROTOCOL
+        public static string Protocol = PROTOCOL;
+#else
+        public static string Protocol = "novarin16";
+#endif
         public static string installPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Novarizz\\" + client;
         public static bool doSha256Check = false;
-        public static string RevName = "Novarin 2016";
-        public static string Protocol = "novarin16";
     }
 }
