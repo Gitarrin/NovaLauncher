@@ -7,8 +7,8 @@ namespace NovaLauncher
 {
     public static class Config
     {
-        public static string baseUrl = "http://novarin.cc/client/setup";
-        public static string downloadCompleteUrl = "https://novarin.cc/app/downloaded";
+        public static string baseUrl = "http://n.termy.lol/client/setup";
+        public static string downloadCompleteUrl = "https://n.termy.lol/app/downloaded";
         public static string client = "2016";
         public static string installPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Novarizz\\" + client;
         public static bool doSha256Check = false;
