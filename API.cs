@@ -21,6 +21,8 @@ namespace NovaLauncher
         public string Ticket { get; set; }
         public string LaunchType { get; set; }
         public string LaunchToken { get; set; }
+        public string PlaceId { get; set; }
+        public string JobId { get; set; }
     }
     public class VersionJSON
     {

@@ -290,9 +290,10 @@ namespace NovaLauncher
                 Close();
                 return;
             }
+            Process process;
             if (launchData.LaunchType == "host")
             {
-                var process = new Process
+                process = new Process
                 {
                     StartInfo =
                         {
@@ -302,11 +303,10 @@ namespace NovaLauncher
                             WorkingDirectory = Config.installPath,
                         }
                 };
-                process.Start();
             }
             else
             {
-                var process = new Process
+                process = new Process
                 {
                     StartInfo =
                         {
@@ -317,9 +317,20 @@ namespace NovaLauncher
                             WorkingDirectory = Config.installPath,
                         }
                 };
-                process.Start();
             }
+            process.Start();
 
+            // RPC
+            Process rpcProcess = new Process
+            {
+                StartInfo =
+                        {
+                            FileName = Config.installPath + "\\NovarinRPCManager.exe",
+                            Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.Protocol} -p {process.Id}",
+                            WindowStyle = ProcessWindowStyle.Hidden,
+                            WorkingDirectory = Config.installPath,
+                        }
+            };
 
             progressBar.Value = 100;
             Close();
@@ -351,6 +362,16 @@ namespace NovaLauncher
             }
             else
             {
+                // If the token args start with `discordrpc+`, then we are launching a web browser to launch the game.
+                if (options.Token != null && options.Token.StartsWith("discordrpc+"))
+                {
+                    string[] splitToken = options.Token.Split('+');
+                    string url = $"https://novarin.cc/discord-redirect-place?id={splitToken[1]}&autojoinJob={splitToken[2]}";
+                    Process.Start(url);
+                    Close();
+                    return;
+                }
+
                 status.Text = "Checking version...";
 
                 // Get version.json
