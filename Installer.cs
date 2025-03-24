@@ -8,6 +8,7 @@ using System.IO;
 using System.Net;
 using System.Security.Cryptography;
 using System.ComponentModel;
+using System.Reflection;
 
 namespace NovaLauncher
 {
@@ -20,6 +21,12 @@ namespace NovaLauncher
         public Installer()
         {
             InitializeComponent();
+        }
+
+        private string GetUserAgent()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            return $"NovarinLauncher/{version}";
         }
 
         private void ExtractZipFile(string archiveFilenameIn, string outFolder)
@@ -177,7 +184,7 @@ namespace NovaLauncher
                 }
 
                 key.SetValue("AppReadme", "http://novarin.cc/");
-                key.SetValue("URLUpdateInfo", "http://novarin.cc/");
+                key.SetValue("URLUpdateInfo", "https://novarin.cc/app/downloads");
                 key.SetValue("URLInfoAbout", "https://novarin.cc/app/forum/");
                 key.SetValue("HelpLink", "https://novarin.cc/app/wiki/");
                 key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
@@ -327,10 +334,11 @@ namespace NovaLauncher
                         {
                             FileName = Config.installPath + "\\NovarinRPCManager.exe",
                             Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.Protocol} -p {process.Id}",
-                            WindowStyle = ProcessWindowStyle.Hidden,
+                            WindowStyle = ProcessWindowStyle.Maximized,
                             WorkingDirectory = Config.installPath,
                         }
             };
+            rpcProcess.Start();
 
             progressBar.Value = 100;
             Close();
@@ -422,6 +430,7 @@ namespace NovaLauncher
             {
                 using (WebClient client = new WebClient())
                 {
+                    client.Headers.Add("user-agent", GetUserAgent());
                     string receivedClientData = client.DownloadString(Config.baseUrl + "/" + Config.client);
                     return JsonConvert.DeserializeObject<LatestClientInfo>(receivedClientData);
                 }
@@ -508,6 +517,7 @@ namespace NovaLauncher
             cancelButton.Enabled = true;
 
             webClient = new WebClient();
+            webClient.Headers.Add("user-agent", GetUserAgent());
             string tempZipArchivePath = Path.GetTempPath() + Config.RevName + ".zip";
 
             webClient.DownloadProgressChanged += (s, e) =>
