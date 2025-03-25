@@ -9,6 +9,8 @@ using System.Net;
 using System.Security.Cryptography;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace NovaLauncher
 {
@@ -165,10 +167,24 @@ namespace NovaLauncher
 
         public void CreateUninstallKeys(string installPath, LatestClientInfo latestClientInfo)
         {
-            // Create uninstall keys to uninstall the client.
             try
             {
-                var uninstallKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+                // Check the Windows version
+                Version osVersion = Environment.OSVersion.Version;
+                bool isOlderWindows = osVersion.Major < 6 || (osVersion.Major == 6 && osVersion.Minor < 2); // Windows 7 and earlier
+
+                RegistryKey uninstallKey;
+                if (isOlderWindows || CheckIfWine())
+                {
+                    // Use LocalMachine for older versions of Windows
+                    uninstallKey = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+                }
+                else
+                {
+                    // Use CurrentUser for newer versions of Windows
+                    uninstallKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+                }
+
                 var key = uninstallKey.CreateSubKey(Config.RevName);
                 key.SetValue("DisplayName", Config.RevName);
                 key.SetValue("DisplayIcon", installPath + "\\NovaLauncher.exe");
@@ -188,7 +204,7 @@ namespace NovaLauncher
                 key.SetValue("URLInfoAbout", "https://novarin.cc/app/forum/");
                 key.SetValue("HelpLink", "https://novarin.cc/app/wiki/");
                 key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
-                key.SetValue("EstimatedSize", (int)CalculateDirectorySize(installPath)/1024, RegistryValueKind.DWord);
+                key.SetValue("EstimatedSize", (int)CalculateDirectorySize(installPath) / 1024, RegistryValueKind.DWord);
 
                 key.SetValue("UninstallString", installPath + "\\NovaLauncher.exe --uninstall");
                 key.SetValue("InstallLocation", installPath);
@@ -201,7 +217,6 @@ namespace NovaLauncher
             {
                 MessageBox.Show("Failed to create uninstall keys. 120-0004", Config.RevName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
         }
 
         static long CalculateDirectorySize(string path)
@@ -459,7 +474,11 @@ namespace NovaLauncher
 
                 status.Text = "Configuring " + Config.RevName + "...";
 
-                CreateProtocolOpenKeys(installPath);
+                if (!CheckIfWine())
+                {
+                    CreateProtocolOpenKeys(installPath);
+                }
+                
                 CreateUninstallKeys(installPath, clientInfo);
 
                 if (File.Exists(zipPath))
@@ -549,20 +568,36 @@ namespace NovaLauncher
                         CreateRunTempInstaller(tempZipArchivePath, latestClientInfo);
                         return;
                     }
-                    InstallClientWithWorker(tempZipArchivePath, Config.installPath, latestClientInfo);
+                    else
+                    {
+                        if (CheckIfWine() && !options.HideWineMessage)
+                        {
+                            MessageBox.Show("We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.\n\n" +
+                                "To get Novarin working wine, you will need to\n" +
+                                "1. Create a .desktop file that handles the protocol '" + Config.Protocol + "://token123', that calls the NovaLauncher.exe (found in Appdata/Local/Novarizz/" + Config.client + ") like 'NovaLauncher --token token123' with token123 being whatever is passed thru to the protocol.\n" +
+                                "2. Install DVXK thru something like winetricks.\n\n" +
+                                "If you do those two things correctly (or just use a script lol), you should be able to play Novarin. You will (unfortunetly) have to do this for every version of novarin.\n\nP.S. If your scripting this, you can pass in -w to the setup to hide this warning.\n\n" +
+                                "Stay safe on your linux travels!",
+                                Config.RevName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            Cancel(tempZipArchivePath);
+                            return;
+                        }
+                        InstallClientWithWorker(tempZipArchivePath, Config.installPath, latestClientInfo);
+                    }
+                    ;
+                    worker.RunWorkerAsync();
                 };
-                worker.RunWorkerAsync();
-            };
 
-            try
-            {
-                webClient.DownloadFileAsync(new Uri(latestClientInfo.Url), tempZipArchivePath);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Failed to start download! Error 120-0010");
-                Cancel(tempZipArchivePath);
-            }
+                try
+                {
+                    webClient.DownloadFileAsync(new Uri(latestClientInfo.Url), tempZipArchivePath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Failed to start download! Error 120-0010");
+                    Cancel(tempZipArchivePath);
+                }
+            };
         }
 
         public void ContinueClientStart(LatestClientInfo latestClientInfo)
@@ -603,6 +638,27 @@ namespace NovaLauncher
             {
                 this.ParentForm.Close();
             }
+        }
+    }
+
+    public partial class Installer : UserControl
+    {
+        // Add the DllImport for GetProcAddress and GetModuleHandle
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        public bool CheckIfWine()
+        {
+            IntPtr hModule = GetModuleHandle("ntdll.dll");
+            if (hModule != IntPtr.Zero)
+            {
+                IntPtr procAddress = GetProcAddress(hModule, "wine_get_version");
+                return procAddress != IntPtr.Zero;
+            }
+            return false;
         }
     }
 }
