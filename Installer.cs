@@ -334,7 +334,7 @@ namespace NovaLauncher
                         {
                             FileName = Config.installPath + "\\NovarinRPCManager.exe",
                             Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.Protocol} -p {process.Id}",
-                            WindowStyle = ProcessWindowStyle.Maximized,
+                            WindowStyle = ProcessWindowStyle.Hidden,
                             WorkingDirectory = Config.installPath,
                         }
             };
@@ -370,16 +370,6 @@ namespace NovaLauncher
             }
             else
             {
-                // If the token args start with `discordrpc+`, then we are launching a web browser to launch the game.
-                if (options.Token != null && options.Token.StartsWith("discordrpc+"))
-                {
-                    string[] splitToken = options.Token.Split('+');
-                    string url = $"https://novarin.cc/discord-redirect-place?id={splitToken[1]}&autojoinJob={splitToken[2]}";
-                    Process.Start(url);
-                    Close();
-                    return;
-                }
-
                 status.Text = "Checking version...";
 
                 // Get version.json
