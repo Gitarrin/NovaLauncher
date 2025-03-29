@@ -472,7 +472,12 @@ namespace NovaLauncher
                     return;
                 }
 
-                status.Text = "Configuring " + Config.RevName + "...";
+                if (File.Exists(zipPath))
+                {
+                    File.Delete(zipPath);
+                }
+
+                //status.Text = "Configuring " + Config.RevName + "..."; 
 
                 if (!CheckIfWine())
                 {
@@ -481,10 +486,7 @@ namespace NovaLauncher
                 
                 CreateUninstallKeys(installPath, clientInfo);
 
-                if (File.Exists(zipPath))
-                {
-                    File.Delete(zipPath);
-                }
+                
 
             };
 
@@ -584,20 +586,18 @@ namespace NovaLauncher
                         }
                         InstallClientWithWorker(tempZipArchivePath, Config.installPath, latestClientInfo);
                     }
-                    ;
-                    worker.RunWorkerAsync();
                 };
-
-                try
-                {
-                    webClient.DownloadFileAsync(new Uri(latestClientInfo.Url), tempZipArchivePath);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Failed to start download! Error 120-0010");
-                    Cancel(tempZipArchivePath);
-                }
+                worker.RunWorkerAsync();
             };
+            try
+            {
+                webClient.DownloadFileAsync(new Uri(latestClientInfo.Url), tempZipArchivePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to start download! Error 120-0010");
+                Cancel(tempZipArchivePath);
+            }
         }
 
         public void ContinueClientStart(LatestClientInfo latestClientInfo)
