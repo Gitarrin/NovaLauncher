@@ -21,6 +21,8 @@ namespace NovaLauncher
         public string Ticket { get; set; }
         public string LaunchType { get; set; }
         public string LaunchToken { get; set; }
+        public string PlaceId { get; set; }
+        public string JobId { get; set; }
     }
     public class VersionJSON
     {
@@ -38,6 +40,8 @@ namespace NovaLauncher
         public string TempZipPath { get; set; } // Used to get the path of the zip file
         [Option("updateinfojsonbase64", Required = false)]
         public string UpdateInfo { get; set; } // Used to get the update info
+        [Option('w', "hide-wine-message", Required = false, HelpText = "Disables a warning when using Wine")]
+        public bool HideWineMessage { get; set; }
 
         [ParserState]
         public IParserState LastParserState { get; set; }

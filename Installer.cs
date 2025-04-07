@@ -8,6 +8,9 @@ using System.IO;
 using System.Net;
 using System.Security.Cryptography;
 using System.ComponentModel;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace NovaLauncher
 {
@@ -20,6 +23,12 @@ namespace NovaLauncher
         public Installer()
         {
             InitializeComponent();
+        }
+
+        private string GetUserAgent()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            return $"NovarinLauncher/{version}";
         }
 
         private void ExtractZipFile(string archiveFilenameIn, string outFolder)
@@ -158,10 +167,24 @@ namespace NovaLauncher
 
         public void CreateUninstallKeys(string installPath, LatestClientInfo latestClientInfo)
         {
-            // Create uninstall keys to uninstall the client.
             try
             {
-                var uninstallKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+                // Check the Windows version
+                Version osVersion = Environment.OSVersion.Version;
+                bool isOlderWindows = osVersion.Major < 6 || (osVersion.Major == 6 && osVersion.Minor < 2); // Windows 7 and earlier
+
+                RegistryKey uninstallKey;
+                if (isOlderWindows || CheckIfWine())
+                {
+                    // Use LocalMachine for older versions of Windows
+                    uninstallKey = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+                }
+                else
+                {
+                    // Use CurrentUser for newer versions of Windows
+                    uninstallKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+                }
+
                 var key = uninstallKey.CreateSubKey(Config.RevName);
                 key.SetValue("DisplayName", Config.RevName);
                 key.SetValue("DisplayIcon", installPath + "\\NovaLauncher.exe");
@@ -177,11 +200,11 @@ namespace NovaLauncher
                 }
 
                 key.SetValue("AppReadme", "http://novarin.cc/");
-                key.SetValue("URLUpdateInfo", "http://novarin.cc/");
+                key.SetValue("URLUpdateInfo", "https://novarin.cc/app/downloads");
                 key.SetValue("URLInfoAbout", "https://novarin.cc/app/forum/");
                 key.SetValue("HelpLink", "https://novarin.cc/app/wiki/");
                 key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
-                key.SetValue("EstimatedSize", (int)CalculateDirectorySize(installPath)/1024, RegistryValueKind.DWord);
+                key.SetValue("EstimatedSize", (int)CalculateDirectorySize(installPath) / 1024, RegistryValueKind.DWord);
 
                 key.SetValue("UninstallString", installPath + "\\NovaLauncher.exe --uninstall");
                 key.SetValue("InstallLocation", installPath);
@@ -194,7 +217,6 @@ namespace NovaLauncher
             {
                 MessageBox.Show("Failed to create uninstall keys. 120-0004", Config.RevName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
         }
 
         static long CalculateDirectorySize(string path)
@@ -290,9 +312,10 @@ namespace NovaLauncher
                 Close();
                 return;
             }
+            Process process;
             if (launchData.LaunchType == "host")
             {
-                var process = new Process
+                process = new Process
                 {
                     StartInfo =
                         {
@@ -302,11 +325,10 @@ namespace NovaLauncher
                             WorkingDirectory = Config.installPath,
                         }
                 };
-                process.Start();
             }
             else
             {
-                var process = new Process
+                process = new Process
                 {
                     StartInfo =
                         {
@@ -317,9 +339,21 @@ namespace NovaLauncher
                             WorkingDirectory = Config.installPath,
                         }
                 };
-                process.Start();
             }
+            process.Start();
 
+            // RPC
+            Process rpcProcess = new Process
+            {
+                StartInfo =
+                        {
+                            FileName = Config.installPath + "\\NovarinRPCManager.exe",
+                            Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.Protocol} -p {process.Id}",
+                            WindowStyle = ProcessWindowStyle.Hidden,
+                            WorkingDirectory = Config.installPath,
+                        }
+            };
+            rpcProcess.Start();
 
             progressBar.Value = 100;
             Close();
@@ -401,6 +435,7 @@ namespace NovaLauncher
             {
                 using (WebClient client = new WebClient())
                 {
+                    client.Headers.Add("user-agent", GetUserAgent());
                     string receivedClientData = client.DownloadString(Config.baseUrl + "/" + Config.client);
                     return JsonConvert.DeserializeObject<LatestClientInfo>(receivedClientData);
                 }
@@ -437,15 +472,21 @@ namespace NovaLauncher
                     return;
                 }
 
-                status.Text = "Configuring " + Config.RevName + "...";
-
-                CreateProtocolOpenKeys(installPath);
-                CreateUninstallKeys(installPath, clientInfo);
-
                 if (File.Exists(zipPath))
                 {
                     File.Delete(zipPath);
                 }
+
+                //status.Text = "Configuring " + Config.RevName + "..."; 
+
+                if (!CheckIfWine())
+                {
+                    CreateProtocolOpenKeys(installPath);
+                }
+                
+                CreateUninstallKeys(installPath, clientInfo);
+
+                
 
             };
 
@@ -487,6 +528,7 @@ namespace NovaLauncher
             cancelButton.Enabled = true;
 
             webClient = new WebClient();
+            webClient.Headers.Add("user-agent", GetUserAgent());
             string tempZipArchivePath = Path.GetTempPath() + Config.RevName + ".zip";
 
             webClient.DownloadProgressChanged += (s, e) =>
@@ -528,11 +570,25 @@ namespace NovaLauncher
                         CreateRunTempInstaller(tempZipArchivePath, latestClientInfo);
                         return;
                     }
-                    InstallClientWithWorker(tempZipArchivePath, Config.installPath, latestClientInfo);
+                    else
+                    {
+                        if (CheckIfWine() && !options.HideWineMessage)
+                        {
+                            MessageBox.Show("We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.\n\n" +
+                                "To get Novarin working wine, you will need to\n" +
+                                "1. Create a .desktop file that handles the protocol '" + Config.Protocol + "://token123', that calls the NovaLauncher.exe (found in Appdata/Local/Novarizz/" + Config.client + ") like 'NovaLauncher --token token123' with token123 being whatever is passed thru to the protocol.\n" +
+                                "2. Install DVXK thru something like winetricks.\n\n" +
+                                "If you do those two things correctly (or just use a script lol), you should be able to play Novarin. You will (unfortunetly) have to do this for every version of novarin.\n\nP.S. If your scripting this, you can pass in -w to the setup to hide this warning.\n\n" +
+                                "Stay safe on your linux travels!",
+                                Config.RevName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            Cancel(tempZipArchivePath);
+                            return;
+                        }
+                        InstallClientWithWorker(tempZipArchivePath, Config.installPath, latestClientInfo);
+                    }
                 };
                 worker.RunWorkerAsync();
             };
-
             try
             {
                 webClient.DownloadFileAsync(new Uri(latestClientInfo.Url), tempZipArchivePath);
@@ -582,6 +638,27 @@ namespace NovaLauncher
             {
                 this.ParentForm.Close();
             }
+        }
+    }
+
+    public partial class Installer : UserControl
+    {
+        // Add the DllImport for GetProcAddress and GetModuleHandle
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        public bool CheckIfWine()
+        {
+            IntPtr hModule = GetModuleHandle("ntdll.dll");
+            if (hModule != IntPtr.Zero)
+            {
+                IntPtr procAddress = GetProcAddress(hModule, "wine_get_version");
+                return procAddress != IntPtr.Zero;
+            }
+            return false;
         }
     }
 }
