@@ -104,6 +104,8 @@ namespace NovaLauncher
 		#region Client
 		private void PerformClientCheck()
 		{
+			CreateUninstallKeys(Config.BaseInstallPath);
+
 			// Launcher is all good.
 			if (Program.cliArgs.Token == null)
 			{
@@ -432,7 +434,7 @@ namespace NovaLauncher
 				key.SetValue("URLUpdateInfo", WebConfig.UpdateInfo);
 				key.SetValue("URLInfoAbout", WebConfig.AboutInfo);
 				key.SetValue("HelpLink", WebConfig.HelpInfo);
-				key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
+				if (key.GetValue("InstallDate") == null) key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
 				key.SetValue("EstimatedSize", (int)Helper.App.CalculateDirectorySize(installPath) / 1024, RegistryValueKind.DWord);
 
 				key.SetValue("UninstallString", installPath + @"\" + Config.AppEXE + " --uninstall");
@@ -497,7 +499,6 @@ namespace NovaLauncher
 						this.Invoke(new Action(() => { status.Text = $"Configuring {name}..."; }));
 
 						if (!Helper.App.IsRunningWine()) CreateProtocolOpenKeys(installPath);
-						CreateUninstallKeys(installPath);
 						CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", installPath + @"\" + Config.AppEXE, "");
 					}
 					else
