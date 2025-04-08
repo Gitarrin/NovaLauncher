@@ -348,6 +348,7 @@ namespace NovaLauncher
 							string[] args = Environment.GetCommandLineArgs();
 							string[] cmds =
 							{
+								$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
 								$"move /Y \"{tempPath}\" \"{Config.BaseInstallPath}\\{Config.AppEXE}\"",
 								$"{string.Join(" ", args)} --upinfo {updateInfo}"
 							};
