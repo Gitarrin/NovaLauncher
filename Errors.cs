@@ -15,7 +15,7 @@ namespace NovaLauncher
 			public static ErrorBase GoofedArgs { get; } = new ErrorBase("120-0005", "ya dun goofed up the poor poor arguments :(");
 			public static ErrorBase ExtractFailed { get; } = new ErrorBase("120-0006", "An error occurred while attempting to extract the client.\n{INSTALLPATH}");
 			public static ErrorBase DownloadFailed { get; } = new ErrorBase("120-0007", "An error occurred while trying to download {APPNAME}!\nThe installer will now close.");
-			public static ErrorBase DownloadCorrupted { get; } = new ErrorBase("120-0008", "Downloaded file is corrupted. Please try again.");
+			public static ErrorBase DownloadCorrupted { get; } = new ErrorBase("120-0008", "Downloaded file is corrupted. Please try again.\n(Got Code {CHECKSUMCODE})");
 			public static ErrorBase DownloadStartFail { get; } = new ErrorBase("120-0009", "Failed to start download.");
 			public static ErrorBase RPBNotFound { get; } = new ErrorBase("120-0010", "Hello. We cannot Find RobloxPlayerBeta.exe. It has ran away. We will try to reinstall now.");
 			public static ErrorBase LaunchClientNoVersion { get; } = new ErrorBase("120-0011", "No version provided for launch! That's a little weird...");

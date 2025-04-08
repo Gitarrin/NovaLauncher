@@ -311,9 +311,10 @@ namespace NovaLauncher
 				BackgroundWorker worker = new BackgroundWorker();
 				worker.DoWork += (s1, ev1) =>
 				{
-					if (!Helper.App.IsDownloadOK(tempPath, latestInfo, isForLauncher ? Config.AppSHA256Check : gameClient.ClientCheck))
+					int checkCode = Helper.App.IsDownloadOK(tempPath, latestInfo, isForLauncher ? Config.AppSHA256Check : gameClient.ClientCheck);
+					if (checkCode > 0)
 					{
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted), name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), name, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						Cancel(tempPath);
 						return;
 					}

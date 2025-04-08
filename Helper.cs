@@ -218,14 +218,14 @@ namespace NovaLauncher
 				SetForegroundWindow(handle);
 			}
 
-			public static bool IsDownloadOK(string path, LatestClientInfo data, bool doCheck)
+			public static int IsDownloadOK(string path, LatestClientInfo data, bool doCheck)
 			{
 				// First, let's check the filesize.
 				long downloadedSize = new FileInfo(path).Length;
 				if (downloadedSize != data.Size)
 				{
 					Console.Error.WriteLine($"ERROR: Downloaded file size does not match. Expected: {data.Size} Got: {downloadedSize}");
-					return false;
+					return 1;
 				}
 
 				// Second, let's check the hash.
@@ -240,13 +240,13 @@ namespace NovaLauncher
 						if (checksum != data.Sha256)
 						{
 							Console.Error.WriteLine($"ERROR: Downloaded file SHA256 Checksum does not match. Expected: {data.Sha256} Got: {checksum}");
-							return false;
+							return 2;
 						}
 					}
 				}
 
 				// Lookin' good.
-				return true;
+				return 0;
 			}
 		}
 		#endregion
