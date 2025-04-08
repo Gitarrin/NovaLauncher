@@ -332,7 +332,7 @@ namespace NovaLauncher
 									$" 1. Create a .desktop file that handles the protocol '{Config.AppProtocol}://token123', which calls {Config.AppEXE} (found in Appdata/Local/Novarizz) like '{Config.AppEXE.Replace(".exe", "")} --token token123' with token123 being whatever is passed thru to the protocol.",
 									" 2. Install DVXK thru something like winetricks.",
 									"",
-									"If you do those two things correctly, you should be able to play Novarin. You will (unfortunetly) have to do this for every version of Novarin.",
+									"If you do those two things correctly, you should be able to play Novarin.",
 									"",
 									"P.S. If your scripting this, you can pass in -w to the setup to hide this warning.",
 									"",
