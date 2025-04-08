@@ -266,53 +266,53 @@ namespace NovaLauncher
 	}
 
 	public class LatestClientInfo
-    {
-        public string Version { get; set; }
-        public string Url { get; set; }
-        public string Sha256 { get; set; }
-        public long Size { get; set; }
-    }
-    public class LaunchData
-    {
-        public string JoinScript { get; set; }
-        public string Ticket { get; set; }
-        public string LaunchType { get; set; }
-        public string LaunchToken { get; set; }
-        public string PlaceId { get; set; }
-        public string JobId { get; set; }
+	{
 		public string Version { get; set; }
-    }
-    public class VersionJSON
-    {
-        public string Version { get; set; }
-    }
-    public sealed class CLIArgs
-    {
-        [Option('t', "token", Required = false, HelpText = "Used in launching roblox. Authentication.")]
-        public string Token { get; set; }
+		public string Url { get; set; }
+		public string Sha256 { get; set; }
+		public long Size { get; set; }
+	}
+	public class LaunchData
+	{
+		public string JoinScript { get; set; }
+		public string Ticket { get; set; }
+		public string LaunchType { get; set; }
+		public string LaunchToken { get; set; }
+		public string PlaceId { get; set; }
+		public string JobId { get; set; }
+		public string Version { get; set; }
+	}
+	public class VersionJSON
+	{
+		public string Version { get; set; }
+	}
+	public sealed class CLIArgs
+	{
+		[Option('t', "token", Required = false, HelpText = "Used in launching roblox. Authentication.")]
+		public string Token { get; set; }
 
-        [Option('u', "update", Required = false, HelpText = "Forces an update to the launcher.")]
-        public bool UpdateLauncher { get; set; }
+		[Option('u', "update", Required = false, HelpText = "Forces an update to the launcher.")]
+		public bool UpdateLauncher { get; set; }
 
 		[Option("updateclient", Required = false, HelpText = "Forces an update to the selected client.")]
 		public bool UpdateClient { get; set; }
 
 		[Option("uninstall", Required = false, HelpText = "Uninstalls Novarin :(")]
-        public bool Uninstall { get; set; }
+		public bool Uninstall { get; set; }
 
-        [Option("upinfo", Required = false)]
-        public string UpdateInfo { get; set; } // Used to get the update info
+		[Option("upinfo", Required = false)]
+		public string UpdateInfo { get; set; } // Used to get the update info
 
-        [Option('w', "hide-wine-message", Required = false, HelpText = "Disables a warning when using Wine")]
-        public bool HideWineMessage { get; set; }
+		[Option('w', "hide-wine-message", Required = false, HelpText = "Disables a warning when using Wine")]
+		public bool HideWineMessage { get; set; }
 
-        [ParserState]
-        public IParserState LastParserState { get; set; }
+		[ParserState]
+		public IParserState LastParserState { get; set; }
 
-        [HelpOption]
-        public string GetUsage()
-        {
-            return HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
-        }
-    }
+		[HelpOption]
+		public string GetUsage()
+		{
+			return HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
+		}
+	}
 }
