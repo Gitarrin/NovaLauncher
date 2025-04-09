@@ -5,7 +5,6 @@ using Microsoft.Win32;
 using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace NovaLauncher
 {
@@ -20,15 +19,15 @@ namespace NovaLauncher
 		{
 			try
 			{
-				if (Helper.App.IsOlderWindows() || Helper.App.IsRunningWine())
+				if (Helpers.App.IsOlderWindows() || Helpers.App.IsRunningWine())
 				{
 					// Use LocalMachine for older versions of Windows
-					Helper.Registry.RemoveRegKeys(Registry.LocalMachine, @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + Config.AppName);
+					Helpers.Registry.RemoveRegKeys(Registry.LocalMachine, @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + Config.AppName);
 				}
 				else
 				{
 					// Use CurrentUser for newer versions of Windows
-					Helper.Registry.RemoveRegKeys(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + Config.AppName);
+					Helpers.Registry.RemoveRegKeys(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + Config.AppName);
 				}
 			} catch (Exception ex)
 			{
@@ -46,24 +45,7 @@ namespace NovaLauncher
 
 			try
 			{
-				// Get all files and directories in the installation directory
-				var files = Directory.GetFiles(installationDirectory);
-				var directories = Directory.GetDirectories(installationDirectory);
-
-				// Delete all files except the uninstaller
-				foreach (var file in files)
-				{
-					if (file != uninstallerPath)
-					{
-						File.Delete(file);
-					}
-				}
-
-				// Delete all directories and their contents
-				foreach (var directory in directories)
-				{
-					Directory.Delete(directory, true);
-				}
+				Helpers.App.PurgeFilesAndFolders(installationDirectory, new string[] { uninstallerPath });
 			}
 			catch (Exception ex)
 			{
@@ -87,7 +69,7 @@ namespace NovaLauncher
 			try
 			{
 				RegistryKey classesKey = Registry.CurrentUser.OpenSubKey(@"Software\Classes", true);
-				Helper.Registry.RemoveRegKeys(classesKey, Config.AppProtocol);
+				Helpers.Registry.RemoveRegKeys(classesKey, Config.AppProtocol);
 			}
 			catch (Exception ex)
 			{
@@ -120,6 +102,7 @@ namespace NovaLauncher
 setlocal
 set max_retries=10
 set retry_count=0
+ping -n 1 127.0.0.1 >nul
 
 :delete_exe
 del /f /q ""{exePath}"" 2>nul

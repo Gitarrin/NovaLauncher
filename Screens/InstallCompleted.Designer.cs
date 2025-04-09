@@ -63,11 +63,14 @@
 			// 
 			// appIcon
 			// 
+			this.appIcon.BackColor = System.Drawing.Color.Transparent;
 			this.appIcon.BackgroundImage = global::NovaLauncher.Properties.Resources.logo;
 			this.appIcon.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+			this.appIcon.Image = global::NovaLauncher.Properties.Resources.logo;
 			this.appIcon.Location = new System.Drawing.Point(194, 60);
 			this.appIcon.Name = "appIcon";
 			this.appIcon.Size = new System.Drawing.Size(110, 104);
+			this.appIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
 			this.appIcon.TabIndex = 3;
 			this.appIcon.TabStop = false;
 			// 

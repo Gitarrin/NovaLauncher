@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.ComponentModel;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Text;
@@ -17,7 +16,7 @@ namespace NovaLauncher
 		LaunchData launchData;
 		WebClient webClient;
 		GameClient gameClient;
-		private static T Get<T>(Type type, string field) => (T)(type.GetField(field)?.GetValue(null) ?? default(T));
+		LatestLauncherInfo latestLauncherInfo;
 
 		public Installer()
 		{
@@ -29,6 +28,8 @@ namespace NovaLauncher
 
 		private void PerformLauncherCheck()
 		{
+			latestLauncherInfo = new LatestLauncherInfo();
+
 			// Strange to see launch data here, but its important, so we can see the protocol.
 			try
 			{
@@ -42,10 +43,14 @@ namespace NovaLauncher
 				// We were in the middle of an update! Send right along!
 				try
 				{
-					string updateInfoJson = Encoding.UTF8.GetString(Convert.FromBase64String(Program.cliArgs.UpdateInfo));
-					LatestClientInfo latestClientInfo = JsonConvert.DeserializeObject<LatestClientInfo>(updateInfoJson);
+					string[] recvUpInfo = Program.cliArgs.UpdateInfo.Split('_');
+					string updateInfoJson = Encoding.UTF8.GetString(Convert.FromBase64String(recvUpInfo[0]));
+					UpdateInfo updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(updateInfoJson);
 
-					InstallWithWorker(Config.AppName, null, Config.BaseInstallPath, latestClientInfo, true);
+					string latestLauncherJson = Encoding.UTF8.GetString(Convert.FromBase64String(recvUpInfo[1]));
+					latestLauncherInfo = JsonConvert.DeserializeObject<LatestLauncherInfo>(latestLauncherJson);
+
+					InstallWithWorker(updateInfo);
 					return;
 				}
 				catch
@@ -57,43 +62,86 @@ namespace NovaLauncher
 			}
 
 			// Now, we need to check the Launcher version first.
-			status.Text = "Checking version...";
-			string launcherVersion = Helper.App.GetInstalledVersion();
+			status.Text = $"Connecting to {Config.AppShortName}...";
+			string launcherVersion = Helpers.App.GetInstalledVersion();
 
 			BackgroundWorker versionWorker = new BackgroundWorker();
 			versionWorker.DoWork += (s, ev) =>
 			{
-				ev.Result = Helper.Web.GetLatestServerVersionInfo(WebConfig.LauncherSetup);
+				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>(WebConfig.LauncherSetup);
 			};
 			versionWorker.RunWorkerCompleted += (s, ev) =>
 			{
-				if (!(ev.Result is LatestClientInfo latestLauncherInfo))
+				if (!(ev.Result is LatestLauncherInfo))
 				{
-					status.Text = "Error: Can't connect.";
 					MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 					Close();
 					return;
 				}
+				latestLauncherInfo = ev.Result as LatestLauncherInfo;
+
+				if (File.Exists(Config.BaseInstallPath + @"\" + Config.AppEXE))
+				{
+					FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(Config.BaseInstallPath + @"\" + Config.AppEXE);
+					launcherVersion = fvi.ProductVersion ?? fvi.FileVersion;
+				};
+
+				// Alerts stuff first
+				foreach (LauncherAlert alert in latestLauncherInfo.Alerts)
+				{
+					bool alertActive = (long)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds > alert.ActiveUntil;
+					bool launcherAffected = alert.VersionsAffected.Count == 0 || alert.VersionsAffected.Contains(launcherVersion);
+					if (launcherAffected)
+					{
+						if (alert.CanContinue)
+						{
+							MessageBox.Show(alert.Message, Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+						} else
+						{
+							progressBar.Visible = false;
+							progressDebugLbl.Visible = false;
+							status.Text = alert.Message;
+							cancelButton.Text = "Close";
+							cancelButton.Enabled = true;
+							cancelButton.Visible = true;
+							cancelButton.Click += (se, e) => Close();
+							return;
+						}
+					}
+				}
+
+				UpdateInfo launcherUpdateInfo = new UpdateInfo
+				{
+					Name = Config.AppName,
+					Version = latestLauncherInfo.Launcher.Version,
+					Url = latestLauncherInfo.Launcher.Url,
+					Size = latestLauncherInfo.Launcher.Size,
+					IsUpgrade = false,
+					IsLauncher = true,
+					Sha256 = latestLauncherInfo.Launcher.Sha256,
+					DoSHACheck = true,
+					DownloadedPath = "",
+					InstallPath = Config.BaseInstallPath,
+				};
 
 				if (Program.cliArgs.UpdateLauncher)
 				{
-					UpdateWithWorker(Config.AppName, Config.BaseInstallPath, latestLauncherInfo, false, true);
+					UpdateWithWorker(launcherUpdateInfo);
 					return;
 				}
-				else if (!Helper.App.IsRunningFromInstall())
+				else if (!Helpers.App.IsRunningFromInstall())
 				{
 					if (!File.Exists(Config.BaseInstallPath + @"\" + Config.AppEXE))
 					{
-						UpdateWithWorker(Config.AppName, Config.BaseInstallPath, latestLauncherInfo, false, true);
+						UpdateWithWorker(launcherUpdateInfo);
 						return;
 					}
-
-					FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(Config.BaseInstallPath + @"\" + Config.AppEXE);
-					launcherVersion = fvi.ProductVersion ?? fvi.FileVersion;
 				}
 
-				if (latestLauncherInfo.Version != launcherVersion) UpdateWithWorker(Config.AppName, Config.BaseInstallPath, latestLauncherInfo, true, true);
-				else PerformClientCheck();
+				if (launcherUpdateInfo.Version != launcherVersion) {
+					launcherUpdateInfo.IsUpgrade = true;
+					UpdateWithWorker(launcherUpdateInfo);
+				} else PerformClientCheck();
 
 				return;
 			};
@@ -118,44 +166,92 @@ namespace NovaLauncher
 			status.Text = "Checking version...";
 			progressBar.Style = ProgressBarStyle.Marquee;
 
-			Type clientType = typeof(Config).GetNestedType("Client" + launchData.Version, BindingFlags.Public | BindingFlags.Static);
-			if (clientType == null)
+			if (latestLauncherInfo.Clients[launchData.Version] == null)
 			{
 				MessageBox.Show(Error.GetErrorMsg(launchData.Version == null ? Error.Installer.LaunchClientNoVersion : Error.Installer.LaunchClientFailed, new Dictionary<string, string>() { { "{CLIENT}", launchData.Version } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				Close();
 				return;
 			}
 
-			// Setting up client.
+			// Decode server-side client data.
+			LauncherClient client = latestLauncherInfo.Clients[launchData.Version];
+			if (client.Status == LauncherClientStatus.NO_RELEASE || client.Status == LauncherClientStatus.REMOVED)
+			{
+				if (client.Status == LauncherClientStatus.REMOVED)
+				{
+					string installPath = Config.BaseInstallPath + @"\" + launchData.Version;
+					try { Helpers.App.PurgeFilesAndFolders(installPath); Directory.Delete(installPath); } catch { };
+				};
+				MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientNotAvailable, new Dictionary<string, string>() { { "{CLIENT}", client.Name } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				Close();
+				return;
+			}
+
+			// Setting up client-side client. Heh, get it..? OK, I'm not funny.
 			gameClient = new GameClient
 			{
-				Name = Get<string>(clientType, "Name"),
-				InstallPath = Get<string>(clientType, "InstallPath"),
-				Executable = Get<string>(clientType, "Executable"),
-				HostExecutable = Get<string>(clientType, "HostExecutable"),
-				StudioExecutable = Get<string>(clientType, "StudioExecutable"),
-				ClientCheck = Get<bool>(clientType, "SHA256Check"),
-				DiscordRPC = Get<bool>(clientType, "DiscordRPC"),
-				Version = Helper.App.GetInstalledVersion(launchData.Version)
+				Name = client.Name,
+				InstallPath = Config.BaseInstallPath + @"\" + launchData.Version,
+				Executable = client.Executables.Player,
+				StudioExecutable = client.Executables.Studio,
+				HostExecutable = client.Executables.Host,
+				ClientCheck = client.Checksum,
+				Version = null,
+				GameBase = latestLauncherInfo.Launcher.Urls.Base
 			};
+
+			if (File.Exists(gameClient.InstallPath + @"\version.json"))
+			{
+				gameClient.Version = Helpers.App.GetInstalledVersion(launchData.Version);
+			}
 
 			BackgroundWorker versionWorker = new BackgroundWorker();
 			versionWorker.DoWork += (s, ev) =>
 			{
-				ev.Result = Helper.Web.GetLatestServerVersionInfo($"{WebConfig.ClientSetup}/{launchData.Version}");
+				ev.Result = client.Status == LauncherClientStatus.PAUSED ? null : Helpers.Web.GetLatestServerVersionInfo<LatestClientInfo>(client.Info);
 			};
 			versionWorker.RunWorkerCompleted += (s, ev) =>
 			{
-				if (!(ev.Result is LatestClientInfo latestClientInfo))
+				if (!(ev.Result is LatestClientInfo))
 				{
-					status.Text = "Error: Can't connect.";
-					MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), gameClient.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
-					Close();
+					if (!Program.cliArgs.UpdateClient && gameClient.Version != null && client.Status == LauncherClientStatus.PAUSED) PerformClientStart();
+					else if (client.Status == LauncherClientStatus.PAUSED)
+					{
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientNotAvailable, new Dictionary<string, string>() { { "{CLIENT}", client.Name } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						Close();
+					}
+					else
+					{
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), client.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						Close();
+					}
 					return;
 				}
+				LatestClientInfo latestClientInfo = ev.Result as LatestClientInfo;
 
-				if (gameClient.Version == "" || Program.cliArgs.UpdateClient) UpdateWithWorker(gameClient.Name, gameClient.InstallPath, latestClientInfo, false, false);
-				else if (latestClientInfo.Version != gameClient.Version) UpdateWithWorker(gameClient.Name, gameClient.InstallPath, latestClientInfo, true, false);
+				UpdateInfo clientUpdateInfo = new UpdateInfo
+				{
+					Name = gameClient.Name,
+					Version = latestClientInfo.Version,
+					Url = latestClientInfo.Url,
+					Size = latestClientInfo.Size,
+					IsUpgrade = false,
+					IsLauncher = false,
+					Sha256 = latestClientInfo.Sha256,
+					DoSHACheck = gameClient.ClientCheck,
+					DownloadedPath = "",
+					InstallPath = gameClient.InstallPath,
+				};
+
+				if (Program.cliArgs.UpdateClient || gameClient.Version == null)
+				{
+					UpdateWithWorker(clientUpdateInfo);
+				}
+				else if (clientUpdateInfo.Version != gameClient.Version)
+				{
+					clientUpdateInfo.IsUpgrade = true;
+					UpdateWithWorker(clientUpdateInfo);
+				}
 				else PerformClientStart();
 
 				return;
@@ -207,7 +303,7 @@ namespace NovaLauncher
 						StartInfo =
 						{
 							FileName = gameClient.InstallPath + @"\" + gameClient.Executable,
-							Arguments = $"-a \"{WebConfig.GameBase}/Login/Negotiate.ashx\" -t \"{launchData.Ticket}\" -j \"{launchData.JoinScript}\"",
+							Arguments = $"-a \"{gameClient.GameBase}/Login/Negotiate.ashx\" -t \"{launchData.Ticket}\" -j \"{launchData.JoinScript}\"",
 							WindowStyle = ProcessWindowStyle.Maximized,
 							WorkingDirectory = gameClient.InstallPath
 						}
@@ -235,17 +331,17 @@ namespace NovaLauncher
 				}
 
 				// Roblox 2012 needs a little help sometimes.
-				try { if (gameClient.Name == Config.Client2012.Name) Helper.App.BringToFront(process.MainWindowTitle); } catch { };
+				try { if (gameClient.Name.Contains("2012")) Helpers.App.BringToFront(process.MainWindowTitle); } catch { };
 
 				// Discord RPC
 				Process rpcProcess;
-				if (gameClient.DiscordRPC && File.Exists(gameClient.InstallPath + @"\NovarinRPCManager.exe"))
+				if (launchData.LaunchType == "client" && File.Exists(Config.BaseInstallPath + @"\NovarinRPCManager.exe"))
 				{
 					rpcProcess = new Process()
 					{
 						StartInfo =
 						{
-							FileName = gameClient.InstallPath + @"\NovarinRPCManager.exe",
+							FileName = Config.BaseInstallPath + @"\NovarinRPCManager.exe",
 							Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.AppProtocol} -p {process.Id}",
 							WindowStyle = ProcessWindowStyle.Hidden,
 							WorkingDirectory = gameClient.InstallPath
@@ -265,15 +361,15 @@ namespace NovaLauncher
 		#endregion
 
 		#region Download/Install/Upgrade/etc.
-		private void UpdateWithWorker(string name, string installPath, LatestClientInfo latestInfo, bool upgrade = false, bool isForLauncher = false)
+		private void UpdateWithWorker(UpdateInfo updateInfo)
 		{
-			status.Text = $"{(upgrade ? "Upgrading" : "Downloading the latest")} {name}...";
+			status.Text = $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...";
 			progressBar.Style = ProgressBarStyle.Continuous;
 			cancelButton.Enabled = true;
 
 			webClient = new WebClient();
-			webClient.Headers.Add("user-agent", Helper.Web.GetUserAgent());
-			string tempPath = Path.GetTempPath() + (isForLauncher ? Config.AppEXE : name) + (isForLauncher ? "" : ".zip");
+			webClient.Headers.Add("user-agent", Helpers.Web.GetUserAgent());
+			updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
 
 			Stopwatch downWatch = new Stopwatch();
 			webClient.DownloadProgressChanged += (s, e) =>
@@ -288,7 +384,7 @@ namespace NovaLauncher
 				double speed = secsElp > 0 ? bytesRecv / secsElp : 0;
 
 				// Update everything!
-				progressDebugLbl.Text = $"{progress}% ({Helper.Web.FormatSpeed(speed)}/s)";
+				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatSpeed(speed)}/s)";
 				progressDebugLbl.Visible = isShiftDown;
 				progressBar.Value = progress;
 			};
@@ -298,32 +394,32 @@ namespace NovaLauncher
 
 				if (e.Cancelled)
 				{
-					Cancel(tempPath);
+					Cancel(updateInfo.DownloadedPath);
 					return;
 				}
 				if (e.Error != null)
 				{
 					MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-					Cancel(tempPath);
+					Cancel(updateInfo.DownloadedPath);
 					return;
 				}
 
 				BackgroundWorker worker = new BackgroundWorker();
 				worker.DoWork += (s1, ev1) =>
 				{
-					int checkCode = Helper.App.IsDownloadOK(tempPath, latestInfo, isForLauncher ? Config.AppSHA256Check : gameClient.ClientCheck);
+					int checkCode = Helpers.App.IsDownloadOK(updateInfo);
 					if (checkCode > 0)
 					{
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), name, MessageBoxButtons.OK, MessageBoxIcon.Error);
-						Cancel(tempPath);
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						Cancel(updateInfo.DownloadedPath);
 						return;
 					}
 				};
 				worker.RunWorkerCompleted += (s1, ev1) =>
 				{
-					if (isForLauncher)
+					if (updateInfo.IsLauncher)
 					{
-						if (!upgrade && Helper.App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
+						if (!updateInfo.IsUpgrade && Helpers.App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
 						{
 							string[] wineMessage = new string[]
 							{
@@ -341,42 +437,20 @@ namespace NovaLauncher
 							};
 							MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						}
-
-						if (upgrade)
-						{
-							// Because we're about to replace the current EXE, we need to restart the launcher.
-							string updateInfo = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestInfo)));
-							string[] args = Environment.GetCommandLineArgs();
-							string[] cmds =
-							{
-								$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
-								$"move /Y \"{tempPath}\" \"{Config.BaseInstallPath}\\{Config.AppEXE}\"",
-								$"{string.Join(" ", args)} --upinfo {updateInfo}"
-							};
-							Process.Start(new ProcessStartInfo
-							{
-								FileName = "cmd.exe",
-								Arguments = $"/c {string.Join(" && ", cmds)}",
-								WindowStyle = ProcessWindowStyle.Hidden,
-								CreateNoWindow = true
-							});
-							Close();
-							return;
-						}
 					}
-					InstallWithWorker(name, tempPath, installPath, latestInfo, isForLauncher);
+					InstallWithWorker(updateInfo);
 
 				};
 				worker.RunWorkerAsync();
 			};
 			try
 			{
-				webClient.DownloadFileAsync(new Uri(latestInfo.Url), tempPath);
+				webClient.DownloadFileAsync(new Uri(updateInfo.Url), updateInfo.DownloadedPath);
 			}
 			catch
 			{
 				MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
-				Cancel(tempPath);
+				Cancel(updateInfo.DownloadedPath);
 			}
 		}
 
@@ -387,9 +461,9 @@ namespace NovaLauncher
 				RegistryKey classesKey = Registry.CurrentUser.OpenSubKey(@"Software\Classes", true);
 
 				// -- START LEGACY KEY REMOVAL -- WE ARE AIO SO LET'S CLEAN UP OUR ORIGINAL MESS
-				Helper.Registry.RemoveRegKeys(classesKey, "novarin12");
-				Helper.Registry.RemoveRegKeys(classesKey, "novarin15");
-				Helper.Registry.RemoveRegKeys(classesKey, "novarin16");
+				Helpers.Registry.RemoveRegKeys(classesKey, "novarin12");
+				Helpers.Registry.RemoveRegKeys(classesKey, "novarin15");
+				Helpers.Registry.RemoveRegKeys(classesKey, "novarin16");
 				// -- END LEGACY KEY REMOVAL --
 
 				RegistryKey key = classesKey.CreateSubKey(Config.AppProtocol);
@@ -409,13 +483,13 @@ namespace NovaLauncher
 		{
 			try
 			{
-				RegistryKey uninstallKey = (Helper.App.IsOlderWindows() || Helper.App.IsRunningWine()) ? Registry.LocalMachine : Registry.CurrentUser;
+				RegistryKey uninstallKey = (Helpers.App.IsOlderWindows() || Helpers.App.IsRunningWine()) ? Registry.LocalMachine : Registry.CurrentUser;
 				uninstallKey = uninstallKey.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
 
 				// -- START LEGACY KEY REMOVAL -- WE ARE AIO SO LET'S CLEAN UP OUR ORIGINAL MESS
-				Helper.Registry.RemoveRegKeys(uninstallKey, "Novarin 2012");
-				Helper.Registry.RemoveRegKeys(uninstallKey, "Novarin 2015");
-				Helper.Registry.RemoveRegKeys(uninstallKey, "Novarin 2016");
+				Helpers.Registry.RemoveRegKeys(uninstallKey, "Novarin 2012");
+				Helpers.Registry.RemoveRegKeys(uninstallKey, "Novarin 2015");
+				Helpers.Registry.RemoveRegKeys(uninstallKey, "Novarin 2016");
 				// -- END LEGACY KEY REMOVAL --
 
 				RegistryKey key = uninstallKey.CreateSubKey(Config.AppName);
@@ -423,8 +497,8 @@ namespace NovaLauncher
 				key.SetValue("DisplayIcon", installPath + @"\" + Config.AppEXE);
 				key.SetValue("Publisher", "Novarin");
 
-				key.SetValue("DisplayVersion", Helper.App.GetInstalledVersion());
-				int[] versionElements = Array.ConvertAll(Helper.App.GetInstalledVersion().Split('.'), int.Parse);
+				key.SetValue("DisplayVersion", Helpers.App.GetInstalledVersion());
+				int[] versionElements = Array.ConvertAll(Helpers.App.GetInstalledVersion().Split('.'), int.Parse);
 				if (!(versionElements.Length < 3))
 				{
 					key.SetValue("VersionMajor", versionElements[0]);
@@ -432,12 +506,12 @@ namespace NovaLauncher
 					key.SetValue("Version", versionElements[2]);
 				}
 
-				key.SetValue("AppReadme", WebConfig.GameBase);
-				key.SetValue("URLUpdateInfo", WebConfig.UpdateInfo);
-				key.SetValue("URLInfoAbout", WebConfig.AboutInfo);
-				key.SetValue("HelpLink", WebConfig.HelpInfo);
+				// key.SetValue("AppReadme", WebConfig.GameBase);
+				key.SetValue("URLUpdateInfo", latestLauncherInfo.Launcher.Urls.UpdateInfo);
+				key.SetValue("URLInfoAbout", latestLauncherInfo.Launcher.Urls.AboutInfo);
+				key.SetValue("HelpLink", latestLauncherInfo.Launcher.Urls.HelpInfo);
 				if (key.GetValue("InstallDate") == null) key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
-				key.SetValue("EstimatedSize", (int)Helper.App.CalculateDirectorySize(installPath) / 1024, RegistryValueKind.DWord);
+				key.SetValue("EstimatedSize", (int)Helpers.App.CalculateDirectorySize(installPath) / 1024, RegistryValueKind.DWord);
 
 				key.SetValue("UninstallString", installPath + @"\" + Config.AppEXE + " --uninstall");
 				key.SetValue("InstallLocation", installPath);
@@ -452,36 +526,9 @@ namespace NovaLauncher
 			}
 		}
 
-		private void CreateShortcut(string title, string desc, string path, string args = "")
+		private void InstallWithWorker(UpdateInfo updateInfo)
 		{
-			string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
-			if (!Directory.Exists(shortcutPath)) Directory.CreateDirectory(shortcutPath);
-
-			string shortcutLink = shortcutPath + @"\" + title + ".lnk";
-
-			Type shellType = Type.GetTypeFromProgID("WScript.Shell");
-			object shell = Activator.CreateInstance(shellType);
-			object shortcut = shellType.InvokeMember("CreateShortcut", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, shell, new object[] { shortcutLink });
-			Type shortcutType = shortcut.GetType();
-
-			shortcutType.InvokeMember("TargetPath", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { path });
-			shortcutType.InvokeMember("Arguments", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { args });
-			shortcutType.InvokeMember("Description", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { desc });
-			shortcutType.InvokeMember("WindowStyle", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { 1 });
-			shortcutType.InvokeMember("WorkingDirectory", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { Path.GetDirectoryName(path) });
-			shortcutType.InvokeMember("IconLocation", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { path });
-			shortcutType.InvokeMember("Save", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, shortcut, null);
-		}
-
-		private void InstallWithWorker(string name, string tempPath, string installPath, LatestClientInfo latestInfo, bool isForLauncher = false)
-		{
-			status.Text = $"Installing {name}...";
+			status.Text = $"Installing {updateInfo.Name}...";
 			progressBar.Style = ProgressBarStyle.Marquee;
 			cancelButton.Enabled = false;
 
@@ -490,28 +537,64 @@ namespace NovaLauncher
 			{
 				try
 				{
-					if (isForLauncher)
+					if (updateInfo.IsLauncher)
 					{
-						if (tempPath != null)
+
+						if (updateInfo.IsUpgrade)
 						{
-							if (!Directory.Exists(installPath)) Directory.CreateDirectory(installPath);
-							File.Copy(tempPath, installPath + @"\" + Config.AppEXE, true);
-						};
+							// Cleanup files in the Launcher directory (or create if not exist) & Extract the Launcher stuff
+							if (Directory.Exists(updateInfo.InstallPath))
+							{
+								string[] files = Directory.GetFiles(updateInfo.InstallPath);
+								foreach (string file in files)
+								{
+									if (file == updateInfo.InstallPath + @"\" + Config.AppEXE) continue;
+									File.Delete(file);
+								}
+							}
+							else Directory.CreateDirectory(updateInfo.InstallPath);
 
-						this.Invoke(new Action(() => { status.Text = $"Configuring {name}..."; }));
+							Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, new string[] { Config.AppEXE });
+							Helpers.ZIP.ExtractSingleFileFromZip(updateInfo.DownloadedPath, Path.GetTempPath(), Config.AppEXE);
 
-						if (!Helper.App.IsRunningWine()) CreateProtocolOpenKeys(installPath);
-						CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", installPath + @"\" + Config.AppEXE, "");
+							// Because we're about to replace the current EXE, we need to restart the launcher.
+							updateInfo.IsUpgrade = false; // We already did this step.
+							string[] reUpInfo = {
+								Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
+								Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
+							};
+							string[] args = Environment.GetCommandLineArgs();
+							string[] cmds =
+							{
+								$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
+								$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{updateInfo.InstallPath}\\{Config.AppEXE}\"",
+								$"{string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
+							};
+							Process.Start(new ProcessStartInfo
+							{
+								FileName = "cmd.exe",
+								Arguments = $"/c {string.Join(" && ", cmds)}",
+								WindowStyle = ProcessWindowStyle.Hidden,
+								CreateNoWindow = true
+							});
+							Close();
+							return;
+						}
+
+						this.Invoke(new Action(() => { status.Text = $"Configuring {updateInfo.Name}..."; }));
+
+						if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(updateInfo.InstallPath);
+						Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
 					}
 					else
 					{
-						if (Directory.Exists(installPath)) Directory.Delete(installPath, true);
+						if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 
-						Helper.ZIP.ExtractZipFile(tempPath, installPath);
+						Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath);
 
-						CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", installPath + @"\" + gameClient.StudioExecutable, "");
+						Helpers.App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", updateInfo.InstallPath + @"\" + gameClient.StudioExecutable, "");
 
-						if (File.Exists(tempPath)) File.Delete(tempPath);
+						if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 					};
 				}
 				catch (Exception exc)
@@ -524,24 +607,24 @@ namespace NovaLauncher
 			{
 				if (e.Result != null)
 				{
-					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{INSTALLPATH}", installPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 					if (retry == DialogResult.Retry)
 					{
-						InstallWithWorker(name, tempPath, installPath, latestInfo, isForLauncher);
+						InstallWithWorker(updateInfo);
 						return;
 					}
 					else
 					{
-						if (File.Exists(tempPath)) File.Delete(tempPath);
+						if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 
 						Close();
 						return;
 					}
 				}
-				if (tempPath != null && File.Exists(tempPath)) File.Delete(tempPath);
+				if (updateInfo.DownloadedPath != null && File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 
 				this.Invoke(new Action(() => {
-					if (isForLauncher) PerformClientCheck();
+					if (updateInfo.IsLauncher) PerformClientCheck();
 					else PerformClientStart();
 				}));
 			};
@@ -563,6 +646,7 @@ namespace NovaLauncher
 		private void CancelButton_Click(object sender, EventArgs e)
 		{
 			webClient?.CancelAsync();
+			if (latestLauncherInfo?.Launcher?.Version == null) Close();
 		}
 		private void Close()
 		{

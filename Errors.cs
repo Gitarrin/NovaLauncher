@@ -21,6 +21,7 @@ namespace NovaLauncher
 			public static ErrorBase LaunchClientNoVersion { get; } = new ErrorBase("120-0011", "No version provided for launch! That's a little weird...");
 			public static ErrorBase LaunchClientFailed { get; } = new ErrorBase("120-0012", "The provided client ({CLIENT}) is not supported on this build of {APPNAME} or is invalid.");
 			public static ErrorBase LaunchClientTimeout { get; } = new ErrorBase("120-0013", "{CLIENT} did not launch in time.");
+			public static ErrorBase LaunchClientNotAvailable { get; } = new ErrorBase("120-0014", "{CLIENT} is no longer available.");
 		}
 
 		public static class Uninstaller
