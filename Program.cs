@@ -20,7 +20,7 @@ namespace NovaLauncher
 			string[] args = Environment.GetCommandLineArgs();
 			if (!CommandLine.Parser.Default.ParseArguments(args, cliArgs))
 			{
-				MessageBox.Show("ya dun goofed up the poor poor arguments :(");
+				MessageBox.Show(Error.GetErrorMsg(Error.GoofedArgs));
 				Environment.Exit(CommandLine.Parser.DefaultExitCodeFail);
 			}
 

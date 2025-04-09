@@ -68,7 +68,7 @@ namespace NovaLauncher
 			BackgroundWorker versionWorker = new BackgroundWorker();
 			versionWorker.DoWork += (s, ev) =>
 			{
-				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>(WebConfig.LauncherSetup);
+				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>(Config.LauncherSetup);
 			};
 			versionWorker.RunWorkerCompleted += (s, ev) =>
 			{
