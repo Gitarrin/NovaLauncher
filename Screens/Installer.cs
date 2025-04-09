@@ -553,34 +553,38 @@ namespace NovaLauncher
 							}
 							else Directory.CreateDirectory(updateInfo.InstallPath);
 
-							Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, new string[] { Config.AppEXE });
-							Helpers.ZIP.ExtractSingleFileFromZip(updateInfo.DownloadedPath, Path.GetTempPath(), Config.AppEXE);
-
 							if (updateInfo.IsUpgrade)
 							{
-							// Because we're about to replace the current EXE, we need to restart the launcher.
-							updateInfo.IsUpgrade = false; // We already did this step.
-							string[] reUpInfo = {
-								Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
-								Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
-							};
-							string[] args = Environment.GetCommandLineArgs();
-							string[] cmds =
+								Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, new string[] { Config.AppEXE });
+								Helpers.ZIP.ExtractSingleFileFromZip(updateInfo.DownloadedPath, Path.GetTempPath(), Config.AppEXE);
+
+								// Because we're about to replace the current EXE, we need to restart the launcher.
+								updateInfo.IsUpgrade = false; // We already did this step.
+								string[] reUpInfo = {
+									Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
+									Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
+								};
+								string[] args = Environment.GetCommandLineArgs();
+								string[] cmds =
+								{
+									$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
+									$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{updateInfo.InstallPath}\\{Config.AppEXE}\"",
+									$"{string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
+								};
+								Process.Start(new ProcessStartInfo
+								{
+									FileName = "cmd.exe",
+									Arguments = $"/c {string.Join(" && ", cmds)}",
+									WindowStyle = ProcessWindowStyle.Hidden,
+									CreateNoWindow = true
+								});
+								Close();
+								return;
+							}
+							else
 							{
-								$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
-								$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{updateInfo.InstallPath}\\{Config.AppEXE}\"",
-								$"{string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
-							};
-							Process.Start(new ProcessStartInfo
-							{
-								FileName = "cmd.exe",
-								Arguments = $"/c {string.Join(" && ", cmds)}",
-								WindowStyle = ProcessWindowStyle.Hidden,
-								CreateNoWindow = true
-							});
-							Close();
-							return;
-						}
+								Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath);
+							}
 						}
 
 						this.Invoke(new Action(() => { status.Text = $"Configuring {updateInfo.Name}..."; }));
