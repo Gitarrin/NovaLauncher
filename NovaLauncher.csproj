@@ -223,7 +223,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Helper.cs" />
+    <Compile Include="Helpers\Classes.cs" />
+    <Compile Include="Helpers\Helper.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Errors.cs" />
     <Compile Include="Screens\InstallCompleted.cs">
