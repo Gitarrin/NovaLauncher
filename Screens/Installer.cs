@@ -539,8 +539,7 @@ namespace NovaLauncher
 				{
 					if (updateInfo.IsLauncher)
 					{
-
-						if (updateInfo.IsUpgrade)
+						if (Program.cliArgs.UpdateInfo == null)
 						{
 							// Cleanup files in the Launcher directory (or create if not exist) & Extract the Launcher stuff
 							if (Directory.Exists(updateInfo.InstallPath))
@@ -557,6 +556,8 @@ namespace NovaLauncher
 							Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, new string[] { Config.AppEXE });
 							Helpers.ZIP.ExtractSingleFileFromZip(updateInfo.DownloadedPath, Path.GetTempPath(), Config.AppEXE);
 
+							if (updateInfo.IsUpgrade)
+							{
 							// Because we're about to replace the current EXE, we need to restart the launcher.
 							updateInfo.IsUpgrade = false; // We already did this step.
 							string[] reUpInfo = {
@@ -579,6 +580,7 @@ namespace NovaLauncher
 							});
 							Close();
 							return;
+						}
 						}
 
 						this.Invoke(new Action(() => { status.Text = $"Configuring {updateInfo.Name}..."; }));
