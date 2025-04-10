@@ -133,7 +133,7 @@ namespace NovaLauncher
         private void loadTimer_Tick(object sender, EventArgs e)
         {
             this.loadTimer.Stop();
-            this.Form1_Shown(sender, e);
+            this.PerformLauncherCheck();
         }
 
 

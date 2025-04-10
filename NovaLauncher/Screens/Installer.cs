@@ -24,7 +24,6 @@ namespace NovaLauncher
 		}
 
 		#region Launcher
-		private void Form1_Shown(object sender, EventArgs e) => PerformLauncherCheck();
 
 		private void PerformLauncherCheck()
 		{
