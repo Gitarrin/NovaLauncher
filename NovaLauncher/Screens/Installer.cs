@@ -49,7 +49,7 @@ namespace NovaLauncher
 					string latestLauncherJson = Encoding.UTF8.GetString(Convert.FromBase64String(recvUpInfo[1]));
 					latestLauncherInfo = JsonConvert.DeserializeObject<LatestLauncherInfo>(latestLauncherJson);
 
-					InstallWithWorker(updateInfo);
+					Install(updateInfo);
 					return;
 				}
 				catch
@@ -125,21 +125,21 @@ namespace NovaLauncher
 
 				if (Program.cliArgs.UpdateLauncher)
 				{
-					UpdateWithWorker(launcherUpdateInfo);
+					Update(launcherUpdateInfo);
 					return;
 				}
 				else if (!Helpers.App.IsRunningFromInstall())
 				{
 					if (!File.Exists(Config.BaseInstallPath + @"\" + Config.AppEXE))
 					{
-						UpdateWithWorker(launcherUpdateInfo);
+						Update(launcherUpdateInfo);
 						return;
 					}
 				}
 
 				if (launcherUpdateInfo.Version != launcherVersion) {
 					launcherUpdateInfo.IsUpgrade = true;
-					UpdateWithWorker(launcherUpdateInfo);
+					Update(launcherUpdateInfo);
 				} else PerformClientCheck();
 
 				return;
@@ -244,12 +244,12 @@ namespace NovaLauncher
 
 				if (Program.cliArgs.UpdateClient || gameClient.Version == null)
 				{
-					UpdateWithWorker(clientUpdateInfo);
+					Update(clientUpdateInfo);
 				}
 				else if (clientUpdateInfo.Version != gameClient.Version)
 				{
 					clientUpdateInfo.IsUpgrade = true;
-					UpdateWithWorker(clientUpdateInfo);
+					Update(clientUpdateInfo);
 				}
 				else PerformClientStart();
 
@@ -360,7 +360,7 @@ namespace NovaLauncher
 		#endregion
 
 		#region Download/Install/Upgrade/etc.
-		private void UpdateWithWorker(UpdateInfo updateInfo)
+		private void Update(UpdateInfo updateInfo)
 		{
 			status.Text = $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...";
 			progressBar.Style = ProgressBarStyle.Continuous;
@@ -437,7 +437,7 @@ namespace NovaLauncher
 							MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 						}
 					}
-					InstallWithWorker(updateInfo);
+					Install(updateInfo);
 
 				};
 				worker.RunWorkerAsync();
@@ -525,7 +525,7 @@ namespace NovaLauncher
 			}
 		}
 
-		private void InstallWithWorker(UpdateInfo updateInfo)
+		private void Install(UpdateInfo updateInfo)
 		{
 			status.Text = $"Installing {updateInfo.Name}...";
 			progressBar.Style = ProgressBarStyle.Marquee;
@@ -615,7 +615,7 @@ namespace NovaLauncher
 					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 					if (retry == DialogResult.Retry)
 					{
-						InstallWithWorker(updateInfo);
+						Install(updateInfo);
 						return;
 					}
 					else
