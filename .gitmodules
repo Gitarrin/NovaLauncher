@@ -1,0 +1,3 @@
+[submodule "NovarinRPCManager"]
+	path = NovarinRPCManager
+	url = https://github.com/Novarrin/NovarinRPCManager.git
