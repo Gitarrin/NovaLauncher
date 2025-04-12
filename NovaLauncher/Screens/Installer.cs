@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Text;
 using Microsoft.Win32;
 using Newtonsoft.Json;
+using System.Threading;
 
 namespace NovaLauncher
 {
@@ -58,6 +59,30 @@ namespace NovaLauncher
 					Close();
 					return;
 				};
+			}
+
+			// We are no longer using "Novarizz"
+			if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath))
+			{
+				MigrateInstall();
+				return;
+			} else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
+			{
+				try { Directory.Delete(Config.BaseLegacyInstallPath); }
+				catch (Exception Ex)
+				{
+					DialogResult dr = MessageBox.Show("Migrate failed.\n" + Ex.Message + "\nAbort to exit. Retry to start migration again. Ignore to continue.", Config.AppName, MessageBoxButtons.AbortRetryIgnore);
+					if (dr == DialogResult.Retry)
+					{
+						MigrateInstall();
+						return;
+					}
+					else if (dr == DialogResult.Abort)
+					{
+						Close();
+						return;
+					}
+				}
 			}
 
 			// Now, we need to check the Launcher version first.
@@ -145,6 +170,41 @@ namespace NovaLauncher
 				return;
 			};
 			versionWorker.RunWorkerAsync();
+		}
+		private void MigrateInstall()
+		{
+			status.Text = $"Migrating your install, this may take a moment.";
+
+			BackgroundWorker worker = new BackgroundWorker();
+			worker.DoWork += (s, e) =>
+			{
+				Thread.Sleep(1000);
+			};
+			worker.RunWorkerCompleted += (s, e) =>
+			{
+				if (Directory.Exists(Config.BaseInstallPath)) Directory.Delete(Config.BaseInstallPath, true);
+
+				// Do the migration
+				string[] args = Environment.GetCommandLineArgs();
+				args[0] = Config.BaseInstallPath + @"\" + Config.AppEXE;
+				string[] cmds =
+				{
+					$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
+					$"ren \"{Config.BaseLegacyInstallPath}\" \"{Config.BaseInstallPath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\", "")}\"",
+					$"ping -n 2 127.0.0.1 >nul",
+					$"{string.Join(" ", args)}"
+				};
+				Process.Start(new ProcessStartInfo
+				{
+					FileName = "cmd.exe",
+					Arguments = $"/c {string.Join(" && ", cmds)}",
+					WindowStyle = ProcessWindowStyle.Hidden,
+					CreateNoWindow = true
+				});
+				Close();
+				return;
+			};
+			worker.RunWorkerAsync();
 		}
 		#endregion
 
