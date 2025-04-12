@@ -582,7 +582,7 @@ namespace NovaLauncher
 					key.SetValue("Version", versionElements[2]);
 				}
 
-				// key.SetValue("AppReadme", WebConfig.GameBase);
+				key.SetValue("AppReadme", latestLauncherInfo.Launcher.Urls.Base);
 				key.SetValue("URLUpdateInfo", latestLauncherInfo.Launcher.Urls.UpdateInfo);
 				key.SetValue("URLInfoAbout", latestLauncherInfo.Launcher.Urls.AboutInfo);
 				key.SetValue("HelpLink", latestLauncherInfo.Launcher.Urls.HelpInfo);
