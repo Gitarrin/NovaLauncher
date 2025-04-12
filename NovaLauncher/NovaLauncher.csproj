@@ -190,10 +190,9 @@
   </Target>
   <PropertyGroup>
     <PostBuildEvent>"$(SolutionDir)packages\ILMerge.3.0.41\tools\net452\ILMerge.exe" /target:winexe /out:"$(TargetDir)MergedApp.exe" "$(TargetPath)" "$(TargetDir)Newtonsoft.Json.dll" "$(TargetDir)ICSharpCode.SharpZipLib.dll"  "$(TargetDir)CommandLine.dll"
-if "$(ConfigurationName)"=="Package App" (call "$(SolutionDir)scripts\Package.bat")</PostBuildEvent>
+if "$(ConfigurationName)"=="Package App" (call "$(SolutionDir)scripts\Package_PostBuild.bat")</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PreBuildEvent>if "$(ConfigurationName)"=="Package App" (call "$(SolutionDir)scripts\Package_Prebuild.bat")</PreBuildEvent>
   </PropertyGroup>
 </Project>
