@@ -169,8 +169,8 @@ namespace NovaLauncher
 
 					if (launchCurr < launchUp)
 					{
-					launcherUpdateInfo.IsUpgrade = true;
-					Update(launcherUpdateInfo);
+						launcherUpdateInfo.IsUpgrade = true;
+						Update(launcherUpdateInfo);
 					}
 					else PerformClientCheck();
 				}
