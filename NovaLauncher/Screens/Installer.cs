@@ -162,10 +162,27 @@ namespace NovaLauncher
 					}
 				}
 
-				if (launcherUpdateInfo.Version != launcherVersion) {
+				try
+				{
+					int launchUp = int.Parse(launcherUpdateInfo.Version.Replace(".", ""));
+					int launchCurr = int.Parse(launcherVersion.Replace(".", ""));
+
+					if (launchCurr < launchUp)
+					{
 					launcherUpdateInfo.IsUpgrade = true;
 					Update(launcherUpdateInfo);
-				} else PerformClientCheck();
+					}
+					else PerformClientCheck();
+				}
+				catch
+				{
+					if (launcherUpdateInfo.Version != launcherVersion)
+					{
+						launcherUpdateInfo.IsUpgrade = true;
+						Update(launcherUpdateInfo);
+					}
+					else PerformClientCheck();
+				}
 
 				return;
 			};
