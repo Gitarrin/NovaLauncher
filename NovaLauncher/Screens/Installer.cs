@@ -388,7 +388,7 @@ namespace NovaLauncher
 						StartInfo =
 						{
 							FileName = gameClient.InstallPath + @"\" + gameClient.StudioExecutable,
-							Arguments = $"-{(launchData.LaunchType == "build" ? "build" : "ide")} -script \"{launchData.JoinScript}\"",
+							Arguments = $"-url \"{gameClient.GameBase}/Login/Negotiate.ashx\" -ticket \"{launchData.Ticket}\" -{(launchData.LaunchType == "build" ? "build" : "ide")} -script \"{launchData.JoinScript}\"",
 							WindowStyle = ProcessWindowStyle.Normal,
 							WorkingDirectory = gameClient.InstallPath
 						}
