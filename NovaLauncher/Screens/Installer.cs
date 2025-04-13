@@ -420,9 +420,24 @@ namespace NovaLauncher
 					Close();
 					return;
 				}
+				
+				try {
+					// Some old Robloxs' needs a little help sometimes.
 
-				// Roblox 2012 needs a little help sometimes.
-				try { if (gameClient.Name.Contains("2012")) Helpers.App.BringToFront(process.MainWindowTitle); } catch { };
+					int[] bringYears = { 2008, 2009, 2010, 2011, 2012, 2013, 2014 };
+					bool helpARobloxOut = false;
+
+					foreach (int year in bringYears)
+					{
+						if (gameClient.Name.Contains(year.ToString()))
+						{
+							helpARobloxOut = true;
+							break;
+						}
+					}
+					
+					if (helpARobloxOut) Helpers.App.BringToFront(process.MainWindowTitle);
+				} catch { };
 
 				// Discord RPC
 				Process rpcProcess;
