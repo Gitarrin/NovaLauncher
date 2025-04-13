@@ -6,9 +6,9 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Text;
+using System.Threading;
 using Microsoft.Win32;
 using Newtonsoft.Json;
-using System.Threading;
 
 namespace NovaLauncher
 {
@@ -265,14 +265,21 @@ namespace NovaLauncher
 			}
 
 			// Decode server-side client data.
+			foreach (KeyValuePair<string, LauncherClient> kvp in latestLauncherInfo.Clients)
+			{
+				string serverClientVersion = kvp.Key;
+				LauncherClient serverClient = kvp.Value;
+
+				if (serverClient.Status == LauncherClientStatus.REMOVED)
+				{
+					string installPath = Config.BaseInstallPath + @"\" + serverClientVersion;
+					try { Helpers.App.PurgeFilesAndFolders(installPath); Directory.Delete(installPath); } catch { };
+				};
+			}
+
 			LauncherClient client = latestLauncherInfo.Clients[launchData.Version];
 			if (client.Status == LauncherClientStatus.NO_RELEASE || client.Status == LauncherClientStatus.REMOVED)
 			{
-				if (client.Status == LauncherClientStatus.REMOVED)
-				{
-					string installPath = Config.BaseInstallPath + @"\" + launchData.Version;
-					try { Helpers.App.PurgeFilesAndFolders(installPath); Directory.Delete(installPath); } catch { };
-				};
 				MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientNotAvailable, new Dictionary<string, string>() { { "{CLIENT}", client.Name } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				Close();
 				return;
