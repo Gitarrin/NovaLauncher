@@ -66,16 +66,19 @@ namespace NovaLauncher
 			{
 				MigrateInstall();
 				return;
-			} else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
+			}
+			else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
 			{
-				try {
+				try
+				{
 					Directory.Delete(Config.BaseLegacyInstallPath);
 
 					// Update shortcuts & protocols. (Uninstall keys created later on)
 					if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(Config.BaseInstallPath);
 
 					string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
-					if (Directory.Exists(shortcutPath)) {
+					if (Directory.Exists(shortcutPath))
+					{
 						foreach (string file in Directory.GetFiles(shortcutPath))
 						{
 							Shortcut sc = Shortcut.CreateInstance(file);
@@ -747,7 +750,11 @@ namespace NovaLauncher
 				if (updateInfo.DownloadedPath != null && File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 
 				this.Invoke(new Action(() => {
-					if (updateInfo.IsLauncher) PerformClientCheck();
+					if (updateInfo.IsLauncher)
+					{
+						if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath)) MigrateInstall();
+						else PerformClientCheck();
+					}
 					else PerformClientStart();
 				}));
 			};
