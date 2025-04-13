@@ -58,7 +58,7 @@ namespace NovaLauncher
 			this.cancelButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
 			this.cancelButton.Cursor = System.Windows.Forms.Cursors.Arrow;
 			this.cancelButton.ForeColor = System.Drawing.Color.WhiteSmoke;
-			this.cancelButton.Location = new System.Drawing.Point(204, 277);
+			this.cancelButton.Location = new System.Drawing.Point(204, 279);
 			this.cancelButton.Name = "cancelButton";
 			this.cancelButton.Size = new System.Drawing.Size(90, 28);
 			this.cancelButton.TabIndex = 4;
@@ -92,12 +92,13 @@ namespace NovaLauncher
 			// progressDebugLbl
 			// 
 			this.progressDebugLbl.AutoSize = true;
+			this.progressDebugLbl.Font = new System.Drawing.Font("Microsoft YaHei", 6F);
 			this.progressDebugLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
 			this.progressDebugLbl.Location = new System.Drawing.Point(10, 266);
 			this.progressDebugLbl.Name = "progressDebugLbl";
-			this.progressDebugLbl.Size = new System.Drawing.Size(66, 12);
+			this.progressDebugLbl.Size = new System.Drawing.Size(191, 11);
 			this.progressDebugLbl.TabIndex = 5;
-			this.progressDebugLbl.Text = "0% (0 KB/s)";
+			this.progressDebugLbl.Text = "0% (0.00 KB/0.00 KB | 0.00 KB/s)  |  ETA: 00:00:00";
 			this.progressDebugLbl.Visible = false;
 			// 
 			// loadTimer

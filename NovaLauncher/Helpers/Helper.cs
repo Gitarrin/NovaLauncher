@@ -29,7 +29,7 @@ namespace NovaLauncher.Helpers
 	#region Web
 	public static class Web
 	{
-		public static string FormatSpeed(double bytesPerSecond)
+		public static string FormatBytes(double bytesPerSecond)
 		{
 			string[] sizes = { "B", "KB", "MB", "GB" };
 			int order = 0;

@@ -60,7 +60,7 @@ namespace NovaLauncher
 			this.cancelButton.Cursor = System.Windows.Forms.Cursors.Arrow;
 			this.cancelButton.Enabled = false;
 			this.cancelButton.ForeColor = System.Drawing.Color.WhiteSmoke;
-			this.cancelButton.Location = new System.Drawing.Point(204, 277);
+			this.cancelButton.Location = new System.Drawing.Point(204, 279);
 			this.cancelButton.Name = "cancelButton";
 			this.cancelButton.Size = new System.Drawing.Size(90, 28);
 			this.cancelButton.TabIndex = 4;

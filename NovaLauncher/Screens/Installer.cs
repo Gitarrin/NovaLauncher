@@ -486,11 +486,15 @@ namespace NovaLauncher
 				int progress = e.ProgressPercentage;
 
 				double bytesRecv = e.BytesReceived;
+				double bytesTotal = e.TotalBytesToReceive;
 				double secsElp = downWatch.Elapsed.TotalSeconds;
 				double speed = secsElp > 0 ? bytesRecv / secsElp : 0;
 
+				double etaSecs = speed > 0 ? (bytesTotal - bytesRecv) / speed : 0;
+				TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
+
 				// Update everything!
-				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatSpeed(speed)}/s)";
+				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {eta:hh\\:mm\\:ss}";
 				progressDebugLbl.Visible = isShiftDown;
 				progressBar.Value = progress;
 			};
