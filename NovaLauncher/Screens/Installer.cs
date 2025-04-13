@@ -68,7 +68,22 @@ namespace NovaLauncher
 				return;
 			} else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
 			{
-				try { Directory.Delete(Config.BaseLegacyInstallPath); }
+				try {
+					Directory.Delete(Config.BaseLegacyInstallPath);
+
+					// Update shortcuts & protocols. (Uninstall keys created later on)
+					if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(Config.BaseInstallPath);
+
+					string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+					if (Directory.Exists(shortcutPath)) {
+						foreach (string file in Directory.GetFiles(shortcutPath))
+						{
+							Shortcut sc = Shortcut.CreateInstance(file);
+							sc.TargetPath = sc.TargetPath.Replace(Config.BaseLegacyInstallPath, Config.BaseInstallPath);
+							Shortcut.SaveShortcut(sc);
+						}
+					}
+				}
 				catch (Exception Ex)
 				{
 					DialogResult dr = MessageBox.Show("Migrate failed.\n" + Ex.Message + "\nAbort to exit. Retry to start migration again. Ignore to continue.", Config.AppName, MessageBoxButtons.AbortRetryIgnore);
@@ -395,7 +410,7 @@ namespace NovaLauncher
 					if (!string.IsNullOrEmpty(process.MainWindowTitle)) break; // The game actually launched!
 					if (waited >= stop_waiting) break; // Timeout
 					if (process.HasExited) break; // Process died for some reason
-					System.Threading.Thread.Sleep(1000);
+					Thread.Sleep(1000);
 					process.Refresh();
 					waited += 1000;
 				}

@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
-using CommandLine.Text;
+﻿using System;
+using System.Reflection;
+using System.Collections.Generic;
+using System.IO;
 using CommandLine;
+using CommandLine.Text;
 
 namespace NovaLauncher
 {
@@ -47,6 +50,61 @@ namespace NovaLauncher
 		public bool DoSHACheck { get; set; }
 		public string DownloadedPath { get; set; }
 		public string InstallPath { get; set; }
+	}
+
+	public class Shortcut
+	{
+		public string TargetPath { get; set; }
+		public string Arguments { get; set; }
+		public string Description { get; set; }
+		public int WindowStyle { get; set; } = 1;
+		public string WorkingDirectory { get; set; }
+		public string IconLocation { get; set; }
+		public object ShortcutObject { get; set; }
+		public string ShortcutPath { get; set; }
+
+		public static Shortcut CreateInstance(string path)
+		{
+			Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+			object shell = Activator.CreateInstance(shellType);
+			object shortcut = shellType.InvokeMember("CreateShortcut", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, shell, new object[] { path });
+			Type shortcutType = shortcut.GetType();
+
+			return (File.Exists(path)) ? new Shortcut()
+			{
+				TargetPath = (string)shortcutType.InvokeMember("TargetPath", BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty, null, shortcut, null),
+				Arguments = (string)shortcutType.InvokeMember("Arguments", BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty, null, shortcut, null),
+				Description = (string)shortcutType.InvokeMember("Description", BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty, null, shortcut, null),
+				WindowStyle = (int)shortcutType.InvokeMember("WindowStyle", BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty, null, shortcut, null),
+				WorkingDirectory = (string)shortcutType.InvokeMember("WorkingDirectory", BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty, null, shortcut, null),
+				IconLocation = (string)shortcutType.InvokeMember("IconLocation", BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty, null, shortcut, null),
+				ShortcutObject = shortcut,
+				ShortcutPath = path
+			} : new Shortcut()
+			{
+				ShortcutObject = shortcut,
+				ShortcutPath = path
+			};
+		}
+		public static void SaveShortcut(Shortcut sc)
+		{
+			Type shortcutType = sc.ShortcutObject.GetType();
+
+			shortcutType.InvokeMember("TargetPath", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, sc.ShortcutObject,
+				new object[] { sc.TargetPath });
+			shortcutType.InvokeMember("Arguments", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, sc.ShortcutObject,
+				new object[] { sc.Arguments });
+			shortcutType.InvokeMember("Description", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, sc.ShortcutObject,
+				new object[] { sc.Description });
+			shortcutType.InvokeMember("WindowStyle", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, sc.ShortcutObject,
+				new object[] { sc.WindowStyle });
+			shortcutType.InvokeMember("WorkingDirectory", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, sc.ShortcutObject,
+				new object[] { Path.GetDirectoryName(sc.TargetPath) });
+			shortcutType.InvokeMember("IconLocation", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, sc.ShortcutObject,
+				new object[] { sc.TargetPath });
+
+			shortcutType.InvokeMember("Save", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, sc.ShortcutObject, null);
+		}
 	}
 	#endregion
 
@@ -134,7 +192,7 @@ namespace NovaLauncher
 		public string StudioExecutable { get; set; }
 		public string Arguments { get; set; }
 		public bool ClientCheck { get; set; }
-		public string GameBase {  get; set; }
+		public string GameBase { get; set; }
 	}
 
 

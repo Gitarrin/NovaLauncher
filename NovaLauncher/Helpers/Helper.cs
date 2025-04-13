@@ -275,26 +275,17 @@ namespace NovaLauncher.Helpers
 			string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
 			if (!Directory.Exists(shortcutPath)) Directory.CreateDirectory(shortcutPath);
 
-			string shortcutLink = shortcutPath + @"\" + title + ".lnk";
+			string shortcutLink = $@"{shortcutPath}\{title}.lnk";
 
-			Type shellType = Type.GetTypeFromProgID("WScript.Shell");
-			object shell = Activator.CreateInstance(shellType);
-			object shortcut = shellType.InvokeMember("CreateShortcut", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, shell, new object[] { shortcutLink });
-			Type shortcutType = shortcut.GetType();
+			Shortcut sc = Shortcut.CreateInstance(shortcutLink);
 
-			shortcutType.InvokeMember("TargetPath", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { path });
-			shortcutType.InvokeMember("Arguments", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { args });
-			shortcutType.InvokeMember("Description", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { desc });
-			shortcutType.InvokeMember("WindowStyle", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { 1 });
-			shortcutType.InvokeMember("WorkingDirectory", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { Path.GetDirectoryName(path) });
-			shortcutType.InvokeMember("IconLocation", BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty, null, shortcut,
-				new object[] { path });
-			shortcutType.InvokeMember("Save", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, shortcut, null);
+			sc.TargetPath = path ?? sc.TargetPath;
+			sc.Arguments = args ?? sc.Arguments;
+			sc.Description = desc ?? sc.Description;
+			sc.WorkingDirectory = path != null ? Path.GetDirectoryName(path) : sc.WorkingDirectory;
+			sc.IconLocation = path ?? sc.TargetPath;
+
+			Shortcut.SaveShortcut(sc);
 		}
 	}
 	#endregion
