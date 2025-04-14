@@ -61,46 +61,10 @@ namespace NovaLauncher
 				};
 			}
 
-			// We are no longer using "Novarizz"
-			if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath))
+			if (CheckMigrate())
 			{
 				MigrateInstall();
 				return;
-			}
-			else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
-			{
-				try
-				{
-					Directory.Delete(Config.BaseLegacyInstallPath);
-
-					// Update shortcuts & protocols. (Uninstall keys created later on)
-					if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(Config.BaseInstallPath);
-
-					string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
-					if (Directory.Exists(shortcutPath))
-					{
-						foreach (string file in Directory.GetFiles(shortcutPath))
-						{
-							Shortcut sc = Shortcut.CreateInstance(file);
-							sc.TargetPath = sc.TargetPath.Replace(Config.BaseLegacyInstallPath, Config.BaseInstallPath);
-							Shortcut.SaveShortcut(sc);
-						}
-					}
-				}
-				catch (Exception Ex)
-				{
-					DialogResult dr = MessageBox.Show("Migrate failed.\n" + Ex.Message + "\nAbort to exit. Retry to start migration again. Ignore to continue.", Config.AppName, MessageBoxButtons.AbortRetryIgnore);
-					if (dr == DialogResult.Retry)
-					{
-						MigrateInstall();
-						return;
-					}
-					else if (dr == DialogResult.Abort)
-					{
-						Close();
-						return;
-					}
-				}
 			}
 
 			// Now, we need to check the Launcher version first.
@@ -206,6 +170,46 @@ namespace NovaLauncher
 			};
 			versionWorker.RunWorkerAsync();
 		}
+		private bool CheckMigrate()
+		{
+			// We are no longer using "Novarizz"
+			if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath))
+			{
+				return true;
+			}
+			else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
+			{
+				try
+				{
+					Directory.Delete(Config.BaseLegacyInstallPath);
+
+					// Update shortcuts & protocols. (Uninstall keys created later on)
+					if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(Config.BaseInstallPath);
+
+					string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+					if (Directory.Exists(shortcutPath))
+					{
+						foreach (string file in Directory.GetFiles(shortcutPath))
+						{
+							Shortcut sc = Shortcut.CreateInstance(file);
+							sc.TargetPath = sc.TargetPath.Replace(Config.BaseLegacyInstallPath, Config.BaseInstallPath);
+							Shortcut.SaveShortcut(sc);
+						}
+					}
+				}
+				catch (Exception Ex)
+				{
+					DialogResult dr = MessageBox.Show("Migrate failed.\n" + Ex.Message + "\nAbort to exit. Retry to start migration again. Ignore to continue.", Config.AppName, MessageBoxButtons.AbortRetryIgnore);
+					if (dr == DialogResult.Retry) return true;
+					else if (dr == DialogResult.Abort)
+					{
+						Close();
+						return false;
+					}
+				}
+			}
+			return false;
+		}
 		private void MigrateInstall()
 		{
 			status.Text = $"Migrating your install, this may take a moment.";
@@ -226,6 +230,7 @@ namespace NovaLauncher
 				{
 					$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
 					$"ren \"{Config.BaseLegacyInstallPath}\" \"{Config.BaseInstallPath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\", "")}\"",
+					$"mkdir \"{Config.BaseLegacyInstallPath}\"", // so we can trigger second stage
 					$"ping -n 2 127.0.0.1 >nul",
 					$"{string.Join(" ", args)}"
 				};
@@ -586,6 +591,8 @@ namespace NovaLauncher
 				Helpers.Registry.RemoveRegKeys(classesKey, "novarin16");
 				// -- END LEGACY KEY REMOVAL --
 
+				Helpers.Registry.RemoveRegKeys(classesKey, "novarin"); // Delete old one
+
 				RegistryKey key = classesKey.CreateSubKey(Config.AppProtocol);
 				key.CreateSubKey("DefaultIcon").SetValue("", installPath + @"\" + Config.AppEXE);
 				key.SetValue("", Config.AppProtocol + ":Protocol");
@@ -752,7 +759,7 @@ namespace NovaLauncher
 				this.Invoke(new Action(() => {
 					if (updateInfo.IsLauncher)
 					{
-						if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath)) MigrateInstall();
+						if (CheckMigrate()) MigrateInstall();
 						else PerformClientCheck();
 					}
 					else PerformClientStart();
