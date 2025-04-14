@@ -376,6 +376,7 @@ namespace NovaLauncher
 			worker.DoWork += (s, e) =>
 			{
 				Process process;
+				bool useRPC = false;
 				if (launchData.LaunchType == "host")
 				{
 					process = new Process()
@@ -388,6 +389,9 @@ namespace NovaLauncher
 							WorkingDirectory = gameClient.InstallPath
 						}
 					};
+
+					process.Start();
+					this.Invoke(new Action(() => { progressBar.Value = 50; }));
 				}
 				else if (launchData.LaunchType == "studio" || launchData.LaunchType == "build")
 				{
@@ -401,9 +405,14 @@ namespace NovaLauncher
 							WorkingDirectory = gameClient.InstallPath
 						}
 					};
+
+					process.Start();
+					this.Invoke(new Action(() => { progressBar.Value = 50; }));
 				}
 				else
 				{
+					useRPC = true;
+
 					process = new Process()
 					{
 						StartInfo =
@@ -414,59 +423,62 @@ namespace NovaLauncher
 							WorkingDirectory = gameClient.InstallPath
 						}
 					};
-				}
-				process.Start();
-				this.Invoke(new Action(() => { progressBar.Value = 50; }));
 
-				int waited = 0;
-				int stop_waiting = 60000;
-				while (true)
-				{
-					if (!string.IsNullOrEmpty(process.MainWindowTitle)) break; // The game actually launched!
-					if (waited >= stop_waiting) break; // Timeout
-					if (process.HasExited) break; // Process died for some reason
-					Thread.Sleep(1000);
-					process.Refresh();
-					waited += 1000;
-				}
-				if (waited >= stop_waiting || process.HasExited)
-				{
-					MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientTimeout, new Dictionary<string, string>() { { "{CLIENT}", gameClient.Name } }), gameClient.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
-					Close();
-					return;
-				}
-				
-				try {
-					// Some old Robloxs' needs a little help sometimes.
+					process.Start();
+					this.Invoke(new Action(() => { progressBar.Value = 50; }));
 
-					int[] bringYears = { 2008, 2009, 2010, 2011, 2012, 2013, 2014 };
-					bool helpARobloxOut = false;
-
-					foreach (int year in bringYears)
+					int waited = 0;
+					int stop_waiting = 60000;
+					while (true)
 					{
-						if (gameClient.Name.Contains(year.ToString()))
-						{
-							helpARobloxOut = true;
-							break;
-						}
+						if (!string.IsNullOrEmpty(process.MainWindowTitle)) break; // The game actually launched!
+						if (waited >= stop_waiting) break; // Timeout
+						if (process.HasExited) break; // Process died for some reason
+						Thread.Sleep(1000);
+						process.Refresh();
+						waited += 1000;
 					}
-					
-					if (helpARobloxOut) Helpers.App.BringToFront(process.MainWindowTitle);
-				} catch { };
+					if (waited >= stop_waiting || process.HasExited)
+					{
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientTimeout, new Dictionary<string, string>() { { "{CLIENT}", gameClient.Name } }), gameClient.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						Close();
+						return;
+					}
+
+					try
+					{
+						// Some old Robloxs' needs a little help sometimes.
+
+						int[] bringYears = { 2008, 2009, 2010, 2011, 2012, 2013, 2014 };
+						bool helpARobloxOut = false;
+
+						foreach (int year in bringYears)
+						{
+							if (gameClient.Name.Contains(year.ToString()))
+							{
+								helpARobloxOut = true;
+								break;
+							}
+						}
+
+						if (helpARobloxOut) Helpers.App.BringToFront(process.MainWindowTitle);
+					}
+					catch { };
+				};
 
 				// Discord RPC
 				Process rpcProcess;
-				if (launchData.LaunchType == "client" && File.Exists(Config.BaseInstallPath + @"\NovarinRPCManager.exe"))
+				if (useRPC && File.Exists(Config.BaseInstallPath + @"\NovarinRPCManager.exe"))
 				{
 					rpcProcess = new Process()
 					{
 						StartInfo =
-						{
-							FileName = Config.BaseInstallPath + @"\NovarinRPCManager.exe",
-							Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.AppProtocol} -p {process.Id}",
-							WindowStyle = ProcessWindowStyle.Hidden,
-							WorkingDirectory = gameClient.InstallPath
-						}
+							{
+								FileName = Config.BaseInstallPath + @"\NovarinRPCManager.exe",
+								Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.AppProtocol} -p {process.Id}",
+								WindowStyle = ProcessWindowStyle.Hidden,
+								WorkingDirectory = Config.BaseInstallPath
+							}
 					};
 					rpcProcess.Start();
 				};
