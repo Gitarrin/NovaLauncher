@@ -189,7 +189,7 @@
     <Error Condition="!Exists('packages\ILMerge.3.0.41\build\ILMerge.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\ILMerge.3.0.41\build\ILMerge.props'))" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>"$(SolutionDir)packages\ILMerge.3.0.41\tools\net452\ILMerge.exe" /target:winexe /out:"$(TargetDir)MergedApp.exe" "$(TargetPath)" "$(TargetDir)Newtonsoft.Json.dll" "$(TargetDir)ICSharpCode.SharpZipLib.dll"  "$(TargetDir)CommandLine.dll"
+    <PostBuildEvent>"$(SolutionDir)packages\ILMerge.3.0.41\tools\net452\ILMerge.exe" /target:winexe /out:"$(TargetDir)MergedApp.exe" "$(TargetPath)" "$(TargetDir)Newtonsoft.Json.dll" "$(TargetDir)ICSharpCode.SharpZipLib.dll"  "$(TargetDir)CommandLine.dll" /targetplatform:v2,C:\Windows\Microsoft.NET\Framework\v2.0.50727
 if "$(ConfigurationName)"=="Package App" (call "$(SolutionDir)scripts\Package_PostBuild.bat")</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
