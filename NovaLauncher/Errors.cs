@@ -10,7 +10,7 @@ namespace NovaLauncher
 
 
 		public static class Installer {
-			public static ErrorBase ConnectFailed { get; } = new ErrorBase("120-0001", "We were unable to connect to our servers. Check your internet connection.");
+			public static ErrorBase ConnectFailed { get; } = new ErrorBase("120-0001", "We were unable to connect to our servers. Check your internet connection.\nYou may also try to set your DNS to 1.1.1.1 or 8.8.8.8.");
 			public static ErrorBase ConfigureFailed { get; } = new ErrorBase("120-0002", "Error while configuring {APPNAME}.");
 			public static ErrorBase LaunchFailed { get; } = new ErrorBase("120-0003", "Failed to launch {APPNAME}.");
 			public static ErrorBase CreateUninstallKeys { get; } = new ErrorBase("120-0004", "Failed to create uninstall keys.");

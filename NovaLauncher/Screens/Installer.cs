@@ -257,7 +257,7 @@ namespace NovaLauncher
 			if (Program.cliArgs.Token == null)
 			{
 				// Okay, we weren't launching a client. We'll stop here.
-				InstallerGUI.LoadScreen(new Screens.InstallCompleted());
+				Main.LoadScreen(new Screens.InstallCompleted());
 				return;
 			}
 
@@ -352,13 +352,14 @@ namespace NovaLauncher
 				if (Program.cliArgs.UpdateClient || gameClient.Version == null)
 				{
 					Update(clientUpdateInfo);
+					return;
 				}
 				else if (clientUpdateInfo.Version != gameClient.Version)
 				{
 					clientUpdateInfo.IsUpgrade = true;
 					Update(clientUpdateInfo);
+					return;
 				}
-				else PerformClientStart();
 
 				return;
 			};

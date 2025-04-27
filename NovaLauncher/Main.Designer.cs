@@ -1,8 +1,8 @@
 ﻿
 namespace NovaLauncher
 {
-    partial class InstallerGUI
-    {
+    partial class Main
+	{
         /// <summary>
         /// Required designer variable.
         /// Required designer variable.
@@ -30,10 +30,10 @@ namespace NovaLauncher
         /// </summary>
         private void InitializeComponent()
         {
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InstallerGUI));
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
 			this.SuspendLayout();
 			// 
-			// InstallerGUI
+			// Main
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -45,7 +45,7 @@ namespace NovaLauncher
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.Name = "InstallerGUI";
+			this.Name = "Main";
 			this.RightToLeft = System.Windows.Forms.RightToLeft.No;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.TransparencyKey = System.Drawing.Color.Transparent;

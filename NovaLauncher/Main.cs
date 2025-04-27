@@ -1,19 +1,25 @@
 ﻿using System;
 using System.Windows.Forms;
+
 namespace NovaLauncher
 {
-	public partial class InstallerGUI : Form
+	public partial class Main : Form
 	{
 		private static Panel panelContainer;
 
-		public InstallerGUI()
+		public Main()
 		{
 			InitializeComponent();
+
 			panelContainer = new Panel
 			{
 				Dock = DockStyle.Fill
 			};
 			this.Controls.Add(panelContainer);
+
+			this.WindowState = FormWindowState.Minimized;
+			this.Show();
+			this.WindowState = FormWindowState.Normal;
 
 			if (Program.cliArgs.Uninstall)
 			{

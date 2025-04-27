@@ -22,12 +22,12 @@ namespace NovaLauncher
 				if (Helpers.App.IsOlderWindows() || Helpers.App.IsRunningWine())
 				{
 					// Use LocalMachine for older versions of Windows
-					Helpers.Registry.RemoveRegKeys(Registry.LocalMachine, @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + Config.AppName);
+					Helpers.Registry.RemoveRegKeys(Registry.LocalMachine, $@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{Config.AppName}");
 				}
 				else
 				{
 					// Use CurrentUser for newer versions of Windows
-					Helpers.Registry.RemoveRegKeys(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + Config.AppName);
+					Helpers.Registry.RemoveRegKeys(Registry.CurrentUser, $@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{Config.AppName}");
 				}
 			} catch (Exception ex)
 			{
@@ -41,7 +41,7 @@ namespace NovaLauncher
 			// This removes all files and directories in the installation directory.
 			// We must be careful, because the installer is also in here
 			string installationDirectory = Config.BaseInstallPath;
-			string uninstallerPath = Config.BaseInstallPath + @"\" + Config.AppEXE;
+			string uninstallerPath = $@"{Config.BaseInstallPath}\{Config.AppEXE}";
 
 			try
 			{
@@ -92,7 +92,7 @@ namespace NovaLauncher
 		public void CompleteUninstallation()
 		{
 			string installPath = Config.BaseInstallPath;
-			string exePath = installPath + @"\" + Config.AppName;
+			string exePath = $@"{installPath}\{Config.AppName}";
 
 			// Create a batch file to handle the uninstallation
 			string batchFilePath = Path.Combine(Path.GetTempPath(), Config.AppName.Replace(" ", "") + "Uninstaller.bat");
