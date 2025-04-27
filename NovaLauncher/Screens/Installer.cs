@@ -398,7 +398,7 @@ namespace NovaLauncher
 		private void PerformClientStart()
 		{
 			UpdateStatus($"Starting {gameClient.Name}...");
-			Program.logger.Log($"clientStart: Launch ${gameClient.Name} as {launchData.LaunchType}");
+			Program.logger.Log($"clientStart: Launch {gameClient.Name} as {launchData.LaunchType}");
 			cancelButton.Enabled = false;
 			cancelButton.Visible = false;
 
@@ -552,9 +552,10 @@ namespace NovaLauncher
 
 				double etaSecs = speed > 0 ? (bytesTotal - bytesRecv) / speed : 0;
 				TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
+				string etaStr = $"{eta.Hours:00}:{eta.Minutes:00}:{eta.Seconds:00}";
 
 				// Update everything!
-				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {eta:hh\\:mm\\:ss:00}";
+				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
 				progressDebugLbl.Visible = isShiftDown;
 				progressBar.Value = progress;
 			};
