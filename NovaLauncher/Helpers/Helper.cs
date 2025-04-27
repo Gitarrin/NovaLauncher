@@ -49,6 +49,38 @@ namespace NovaLauncher.Helpers
 			return $"NovarinLauncher/{version}";
 		}
 
+		public static bool FindBestServer()
+		{
+			for (int serverIndex = 1; serverIndex <= Config.Servers.Length; serverIndex++)
+			{
+				string server = Config.Servers[serverIndex - 1];
+				Program.logger.Log($"serverSelector: Try {serverIndex}/{Config.Servers.Length}");
+				try
+				{
+					using (WebClient client = new WebClient())
+					{
+						client.Headers.Add("user-agent", GetUserAgent());
+						string recvData = client.DownloadString(server);
+						if (!recvData.Contains("Server Down") && !recvData.Contains("Error"))
+						{
+							Program.logger.Log($"serverSelector: {serverIndex} selected!");
+							Config.SelectedServer = server;
+							return true;
+						};
+						Program.logger.Log($"serverSelector: {serverIndex} will not select: got string {recvData}");
+					}
+				}
+				catch (Exception Ex)
+				{
+					Program.logger.Log($"serverSelector: {serverIndex} will not select: got error {Ex.Message}");
+				}
+			}
+
+			// Couldn't find one :(, assume blocked/DNS issue/all servers down/etc.
+			Program.logger.Log($"serverSelector: Out of servers to select. Bailing...!");
+			return false;
+		}
+
 		public static T GetLatestServerVersionInfo<T>(string location)
 		{
 			try

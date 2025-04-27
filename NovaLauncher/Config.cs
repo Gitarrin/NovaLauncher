@@ -2,12 +2,16 @@
 
 namespace NovaLauncher
 {
-
 	internal static class Config
 	{
-		public static string LauncherSetup = "http://n.termy.lol/client/launcher";
-		public static string BaseInstallPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\Novarin";
-		public static string BaseLegacyInstallPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\Novarizz";
+		public static readonly string[] Servers = new string[]
+		{
+			"http://n.termy.lol", //main
+			"http://novarin.is-real.dev" // mirror
+		};
+		public static string SelectedServer = "";
+		public static string LauncherSetup = "/client/launcher";
+
 		public static string AppShortName = "Novarin";
 		public static string AppName = $"{AppShortName} Launcher";
 		public static string AppEXE = "NovaLauncher.exe";

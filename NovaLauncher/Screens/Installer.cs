@@ -80,7 +80,17 @@ namespace NovaLauncher
 			BackgroundWorker versionWorker = new BackgroundWorker();
 			versionWorker.DoWork += (s, ev) =>
 			{
-				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>(Config.LauncherSetup);
+				// Let's determine the best server.
+				Program.logger.Log("serverSelector: Finding server...");
+				if (!Helpers.Web.FindBestServer())
+				{
+					MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Close();
+					return;
+				}
+
+				// Now, check the Launcher version.
+				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>(Config.SelectedServer + Config.LauncherSetup);
 			};
 			versionWorker.RunWorkerCompleted += (s, ev) =>
 			{
@@ -828,7 +838,7 @@ namespace NovaLauncher
 		}
 		private void Close()
 		{
-			this.ParentForm?.Close();
+			this.Invoke(new Action(() => this.ParentForm?.Close()));
 		}
 		#endregion
 	}
