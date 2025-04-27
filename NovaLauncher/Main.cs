@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace NovaLauncher
 {
@@ -21,6 +20,11 @@ namespace NovaLauncher
 			this.Show();
 			this.WindowState = FormWindowState.Normal;
 
+			if (!Config.Debug && Control.ModifierKeys == Keys.Shift)
+			{
+				Config.Debug = true;
+			}
+
 			if (Program.cliArgs.Uninstall)
 			{
 				LoadScreen(new Uninstaller());
@@ -31,6 +35,7 @@ namespace NovaLauncher
 
 		public static void LoadScreen(UserControl screen)
 		{
+			Program.logger.Log($"Screen switch: {(panelContainer.Controls.Count > 0 ? ((panelContainer.Controls[0] as UserControl).Name + " -> " + screen.Name) : screen.Name)}");
 			panelContainer.Controls.Clear();
 			screen.Dock = DockStyle.Fill;
 			panelContainer.Controls.Add(screen);

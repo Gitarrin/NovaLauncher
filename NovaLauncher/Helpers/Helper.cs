@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using ICSharpCode.SharpZipLib.Zip;
@@ -200,9 +200,9 @@ namespace NovaLauncher.Helpers
 		{
 			try
 			{
-				if (client == null) return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				if (client == null) return Process.GetCurrentProcess().MainModule.FileVersionInfo.FileVersion.ToString();
 
-				string versionJson = File.ReadAllText(Config.BaseInstallPath + $"\\{client}\\version.json");
+				string versionJson = File.ReadAllText($"{Config.BaseInstallPath}\\{client}\\version.json");
 				VersionJSON version = JsonConvert.DeserializeObject<VersionJSON>(versionJson);
 				return version.Version;
 			}
@@ -211,7 +211,7 @@ namespace NovaLauncher.Helpers
 
 		public static bool IsRunningFromInstall()
 		{
-			string currPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			string currPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
 			return (currPath == Config.BaseInstallPath);
 		}
 
@@ -286,6 +286,12 @@ namespace NovaLauncher.Helpers
 			sc.IconLocation = path ?? sc.TargetPath;
 
 			Shortcut.SaveShortcut(sc);
+		}
+
+		public static string GetOS()
+		{
+			return $"{new Microsoft.VisualBasic.Devices.ComputerInfo().OSFullName}";
+
 		}
 	}
 	#endregion

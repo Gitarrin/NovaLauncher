@@ -24,6 +24,13 @@ namespace NovaLauncher
 			InitializeComponent();
 		}
 
+		private void UpdateStatus(string text)
+		{
+			status.Text = text;
+			Program.logger.Log($"statusText: {text}");
+		}
+
+
 		#region Launcher
 
 		private void PerformLauncherCheck()
@@ -40,7 +47,7 @@ namespace NovaLauncher
 
 			if (Program.cliArgs.UpdateInfo != null)
 			{
-				// We were in the middle of an update! Send right along!
+				Program.logger.Log("launcherCheck: We were in the middle of an update! Send right along!");
 				try
 				{
 					string[] recvUpInfo = Program.cliArgs.UpdateInfo.Split('_');
@@ -67,8 +74,7 @@ namespace NovaLauncher
 				return;
 			}
 
-			// Now, we need to check the Launcher version first.
-			status.Text = $"Connecting to {Config.AppShortName}...";
+			UpdateStatus($"Connecting to {Config.AppShortName}...");
 			string launcherVersion = Helpers.App.GetInstalledVersion();
 
 			BackgroundWorker versionWorker = new BackgroundWorker();
@@ -106,7 +112,7 @@ namespace NovaLauncher
 						{
 							progressBar.Visible = false;
 							progressDebugLbl.Visible = false;
-							status.Text = alert.Message;
+							UpdateStatus(alert.Message);
 							cancelButton.Text = "Close";
 							cancelButton.Enabled = true;
 							cancelButton.Visible = true;
@@ -151,21 +157,25 @@ namespace NovaLauncher
 
 					if (launchCurr < launchUp)
 					{
+						Program.logger.Log($"launcherCheck: Launcher update required: c: {launchCurr} s: {launchUp}");
 						launcherUpdateInfo.IsUpgrade = true;
 						Update(launcherUpdateInfo);
+						return;
 					}
-					else PerformClientCheck();
 				}
 				catch
 				{
-					if (launcherUpdateInfo.Version != launcherVersion)
+					if (launcherVersion != launcherUpdateInfo.Version)
 					{
+						Program.logger.Log($"launcherCheck: Launcher update required: c: {launcherVersion} s: {launcherUpdateInfo.Version}");
 						launcherUpdateInfo.IsUpgrade = true;
 						Update(launcherUpdateInfo);
+						return;
 					}
-					else PerformClientCheck();
 				}
 
+				Program.logger.Log($"launcherCheck: Launcher up to date.");
+				PerformClientCheck();
 				return;
 			};
 			versionWorker.RunWorkerAsync();
@@ -175,10 +185,12 @@ namespace NovaLauncher
 			// We are no longer using "Novarizz"
 			if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath))
 			{
+				Program.logger.Log($"migrate: Legacy exists but Base doesn't.");
 				return true;
 			}
 			else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
 			{
+				Program.logger.Log($"migrate: Finish up.");
 				try
 				{
 					Directory.Delete(Config.BaseLegacyInstallPath);
@@ -186,7 +198,7 @@ namespace NovaLauncher
 					// Update shortcuts & protocols. (Uninstall keys created later on)
 					if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(Config.BaseInstallPath);
 
-					string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+					string shortcutPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.StartMenu)}\Programs\{Config.AppShortName}";
 					if (Directory.Exists(shortcutPath))
 					{
 						foreach (string file in Directory.GetFiles(shortcutPath))
@@ -199,6 +211,7 @@ namespace NovaLauncher
 				}
 				catch (Exception Ex)
 				{
+					Program.logger.Log($"migrate: Failed: {Ex.Message}.");
 					DialogResult dr = MessageBox.Show("Migrate failed.\n" + Ex.Message + "\nAbort to exit. Retry to start migration again. Ignore to continue.", Config.AppName, MessageBoxButtons.AbortRetryIgnore);
 					if (dr == DialogResult.Retry) return true;
 					else if (dr == DialogResult.Abort)
@@ -212,7 +225,7 @@ namespace NovaLauncher
 		}
 		private void MigrateInstall()
 		{
-			status.Text = $"Migrating your install, this may take a moment.";
+			UpdateStatus($"Migrating your install, this may take a moment.");
 
 			BackgroundWorker worker = new BackgroundWorker();
 			worker.DoWork += (s, e) =>
@@ -262,7 +275,7 @@ namespace NovaLauncher
 			}
 
 			// Since we are launching a client, let's continue.
-			status.Text = "Checking version...";
+			UpdateStatus("Checking version...");
 			progressBar.Style = ProgressBarStyle.Marquee;
 
 			if (latestLauncherInfo.Clients[launchData.Version] == null)
@@ -280,6 +293,7 @@ namespace NovaLauncher
 
 				if (serverClient.Status == LauncherClientStatus.REMOVED)
 				{
+					Program.logger.Log($"clientCheck: {serverClient.Name} marked as REMOVED, purging...");
 					string installPath = Config.BaseInstallPath + @"\" + serverClientVersion;
 					try { Helpers.App.PurgeFilesAndFolders(installPath); Directory.Delete(installPath); } catch { };
 				};
@@ -305,10 +319,12 @@ namespace NovaLauncher
 				Version = null,
 				GameBase = latestLauncherInfo.Launcher.Urls.Base
 			};
+			Program.logger.Log($"clientCheck: Looks like we're launching {gameClient.Name}");
 
 			if (File.Exists(gameClient.InstallPath + @"\version.json"))
 			{
 				gameClient.Version = Helpers.App.GetInstalledVersion(launchData.Version);
+				Program.logger.Log($"clientCheck: gameClient Version is {gameClient.Version}");
 			}
 
 			BackgroundWorker versionWorker = new BackgroundWorker();
@@ -356,11 +372,14 @@ namespace NovaLauncher
 				}
 				else if (clientUpdateInfo.Version != gameClient.Version)
 				{
+					Program.logger.Log($"clientCheck: gameClient update required: c: {gameClient.Version} s: {clientUpdateInfo.Version}");
 					clientUpdateInfo.IsUpgrade = true;
 					Update(clientUpdateInfo);
 					return;
 				}
 
+				Program.logger.Log($"clientCheck: gameClient up to date.");
+				PerformClientStart();
 				return;
 			};
 			versionWorker.RunWorkerAsync();
@@ -368,7 +387,8 @@ namespace NovaLauncher
 
 		private void PerformClientStart()
 		{
-			status.Text = $"Starting {gameClient.Name}...";
+			UpdateStatus($"Starting {gameClient.Name}...");
+			Program.logger.Log($"clientStart: Launch ${gameClient.Name} as {launchData.LaunchType}");
 			cancelButton.Enabled = false;
 			cancelButton.Visible = false;
 
@@ -441,6 +461,7 @@ namespace NovaLauncher
 					}
 					if (waited >= stop_waiting || process.HasExited)
 					{
+						Program.logger.Log($"clientStart: Failed to start because: {(waited >= stop_waiting ? "timeout" : "process exited")}");
 						MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientTimeout, new Dictionary<string, string>() { { "{CLIENT}", gameClient.Name } }), gameClient.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						Close();
 						return;
@@ -471,6 +492,7 @@ namespace NovaLauncher
 				Process rpcProcess;
 				if (useRPC && File.Exists(Config.BaseInstallPath + @"\NovarinRPCManager.exe"))
 				{
+					Program.logger.Log("clientStart: Starting RPC Manager...");
 					rpcProcess = new Process()
 					{
 						StartInfo =
@@ -497,7 +519,7 @@ namespace NovaLauncher
 		#region Download/Install/Upgrade/etc.
 		private void Update(UpdateInfo updateInfo)
 		{
-			status.Text = $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...";
+			UpdateStatus($"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
 			progressBar.Style = ProgressBarStyle.Continuous;
 			cancelButton.Enabled = true;
 
@@ -522,7 +544,7 @@ namespace NovaLauncher
 				TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
 
 				// Update everything!
-				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {eta:hh\\:mm\\:ss}";
+				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {eta:hh\\:mm\\:ss:00}";
 				progressDebugLbl.Visible = isShiftDown;
 				progressBar.Value = progress;
 			};
@@ -537,6 +559,7 @@ namespace NovaLauncher
 				}
 				if (e.Error != null)
 				{
+					Program.logger.Log($"update: Failed to download: {e.Error.Message}\n{e.Error.StackTrace}");
 					MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 					Cancel(updateInfo.DownloadedPath);
 					return;
@@ -559,6 +582,7 @@ namespace NovaLauncher
 					{
 						if (!updateInfo.IsUpgrade && Helpers.App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
 						{
+							Program.logger.Log($"Wine message triggered");
 							string[] wineMessage = new string[]
 							{
 									"We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.",
@@ -585,8 +609,9 @@ namespace NovaLauncher
 			{
 				webClient.DownloadFileAsync(new Uri(updateInfo.Url), updateInfo.DownloadedPath);
 			}
-			catch
+			catch (Exception e)
 			{
+				Program.logger.Log($"update: Failed to start download: {e.Message}\n{e.StackTrace}");
 				MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
 				Cancel(updateInfo.DownloadedPath);
 			}
@@ -613,8 +638,9 @@ namespace NovaLauncher
 				key.CreateSubKey(@"shell\open\command").SetValue("", installPath + @"\" + Config.AppEXE + " --token %1");
 				key.Close();
 			}
-			catch
+			catch (Exception Ex)
 			{
+				Program.logger.Log($"Failed creating protocol open keys: {Ex.Message}");
 				MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConfigureFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
@@ -660,15 +686,16 @@ namespace NovaLauncher
 
 				key.Close();
 			}
-			catch
+			catch (Exception Ex)
 			{
+				Program.logger.Log($"Failed creating uninstall keys: {Ex.Message}");
 				MessageBox.Show(Error.GetErrorMsg(Error.Installer.CreateUninstallKeys), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 
 		private void Install(UpdateInfo updateInfo)
 		{
-			status.Text = $"Installing {updateInfo.Name}...";
+			UpdateStatus($"Installing {updateInfo.Name}...");
 			progressBar.Style = ProgressBarStyle.Marquee;
 			cancelButton.Enabled = false;
 
@@ -727,7 +754,7 @@ namespace NovaLauncher
 							}
 						}
 
-						this.Invoke(new Action(() => { status.Text = $"Configuring {updateInfo.Name}..."; }));
+						this.Invoke(new Action(() => { UpdateStatus($"Configuring {updateInfo.Name}..."); }));
 
 						if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(updateInfo.InstallPath);
 						Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
@@ -753,6 +780,7 @@ namespace NovaLauncher
 			{
 				if (e.Result != null)
 				{
+					Program.logger.Log($"install: Failed to extract: {e.Error.Message}\n{e.Error.StackTrace}");
 					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 					if (retry == DialogResult.Retry)
 					{
@@ -785,7 +813,7 @@ namespace NovaLauncher
 		#region Form
 		private void Cancel(string tempPath)
 		{
-			status.Text = "Cancelling...";
+			UpdateStatus("Cancelling...");
 			progressBar.Style = ProgressBarStyle.Marquee;
 			cancelButton.Enabled = false;
 			webClient.Dispose();

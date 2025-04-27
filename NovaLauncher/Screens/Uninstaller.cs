@@ -15,6 +15,12 @@ namespace NovaLauncher
 			InitializeComponent();
 		}
 
+		private void UpdateStatus(string text)
+		{
+			status.Text = text;
+			Program.logger.Log(text);
+		}
+
 		public void DeleteUninstallerKeys()
 		{
 			try
@@ -168,7 +174,7 @@ exit /b 0
 
 		private void Uninstaller_Shown(object sender, EventArgs e)
 		{
-			this.status.Text = "Uninstalling...";
+			UpdateStatus("Uninstalling...");
 			this.progressBar.Style = ProgressBarStyle.Marquee;
 			BackgroundWorker worker = new BackgroundWorker();
 			worker.DoWork += (s, ev) =>
@@ -177,9 +183,12 @@ exit /b 0
 				{
 					EndRunningProcesses();
 					DeleteProtocolOpenKeys();
-					PurgeInstallationDirectory();
 					DeleteUninstallerKeys();
 					DeleteShortcuts();
+					if (Helpers.App.IsRunningFromInstall()) Program.logger.Shutdown();
+					PurgeInstallationDirectory();
+					
+					if (!Helpers.App.IsRunningFromInstall()) UpdateStatus("Uninstallation complete.");
 					MessageBox.Show("Uninstallation complete.", Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
 					CompleteUninstallation();
 				}
