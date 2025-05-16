@@ -59,7 +59,7 @@ namespace NovaLauncher
 			};
 
 			Program.logger.Log($"Generated {error.Code} Error: {message}");
-			return $"{message}\nError {error.Code}";
+			return $"{message}\n\nError {error.Code}";
 		}
 
 		internal class ErrorBase
