@@ -6,6 +6,7 @@ namespace NovaLauncher
 	internal class Error
 	{
 		public static ErrorBase Default { get; } = new ErrorBase("999-0000", "An unknown error occurred.");
+		public static ErrorBase UnhandledException { get; } = new ErrorBase("999-0001", "Uh-oh! {APPNAME} encountered a serious error.\nHere's what we know:\n{ERROR}.\n{APPNAME} will now close.");
 		public static ErrorBase GoofedArgs { get; } = new ErrorBase("120-0005", "ya dun goofed up the poor poor arguments :(");
 
 

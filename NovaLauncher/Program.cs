@@ -45,6 +45,13 @@ namespace NovaLauncher
 				logger.Log("Stopping & flushing logs...");
 				logger.Shutdown();
 			};
+			AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+			{
+				logger.Log("Unhandled Exception!");
+
+				MessageBox.Show(Error.GetErrorMsg(Error.UnhandledException, new System.Collections.Generic.Dictionary<string, string> { { "{ERROR", e.ExceptionObject.ToString() } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				Environment.Exit(-2);
+			};
 
 			Application.Run(new Main()); // Ensure Main is the startup form
 		}
