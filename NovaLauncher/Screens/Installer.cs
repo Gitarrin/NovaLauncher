@@ -288,9 +288,16 @@ namespace NovaLauncher
 			UpdateStatus("Checking version...");
 			progressBar.Style = ProgressBarStyle.Marquee;
 
+			if (launchData.Version == null)
+			{
+				MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientNoVersion), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				Close();
+				return;
+			}
+
 			if (latestLauncherInfo.Clients[launchData.Version] == null)
 			{
-				MessageBox.Show(Error.GetErrorMsg(launchData.Version == null ? Error.Installer.LaunchClientNoVersion : Error.Installer.LaunchClientFailed, new Dictionary<string, string>() { { "{CLIENT}", launchData.Version } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientFailed, new Dictionary<string, string>() { { "{CLIENT}", launchData.Version } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				Close();
 				return;
 			}
