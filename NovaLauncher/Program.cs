@@ -25,6 +25,34 @@ namespace NovaLauncher
 				Environment.Exit(CommandLine.Parser.DefaultExitCodeFail);
 			}
 
+			if (cliArgs.Token != null)
+			{
+			string[] launchData = cliArgs.Token.Split(':');
+			if (launchData[0] != Config.AppProtocol)
+			{
+				MessageBox.Show(Error.GetErrorMsg(Error.GoofedArgs));
+				Environment.Exit(CommandLine.Parser.DefaultExitCodeFail);
+			}
+
+			if (launchData[1] == "test")
+			{
+				MessageBox.Show("Hello! This is the Novarin Launcher.\nThis tests to confirm you have URL protocols working! Yay!\nHave fun!", Config.AppName, MessageBoxButtons.OK);
+				Environment.Exit(0);
+			}
+			else
+			{
+				try
+				{
+					Convert.FromBase64String(launchData[1]);
+				}
+				catch
+				{
+					MessageBox.Show(Error.GetErrorMsg(Error.GoofedArgs));
+					Environment.Exit(CommandLine.Parser.DefaultExitCodeFail);
+				}
+			};
+			};
+
 			if (Control.ModifierKeys == Keys.Shift) {
 				Config.Debug = true;
 			}
