@@ -57,18 +57,26 @@ namespace NovaLauncher.Helpers
 				Program.logger.Log($"serverSelector: Try {serverIndex}/{Config.Servers.Length}");
 				try
 				{
-					using (WebClient client = new WebClient())
+					HttpWebRequest client = (HttpWebRequest)WebRequest.Create(server);
+					client.UserAgent = GetUserAgent();
+					client.Method = "GET";
+
+					using (HttpWebResponse response = (HttpWebResponse)client.GetResponse())
 					{
-						client.Headers.Add("user-agent", GetUserAgent());
-						string recvData = client.DownloadString(server);
-						if (!recvData.Contains("Server Down") && !recvData.Contains("Error"))
-						{
+						string recvData = new StreamReader(response.GetResponseStream()).ReadToEnd();
+						if (
+							response.StatusCode == HttpStatusCode.OK &&
+							!recvData.Contains("Server Down") &&
+							!recvData.Contains("Error")
+						) {
 							Program.logger.Log($"serverSelector: {serverIndex} selected!");
 							Config.SelectedServer = server;
 							return true;
 						};
 						Program.logger.Log($"serverSelector: {serverIndex} will not select: got string {recvData}");
 					}
+
+					client = null;
 				}
 				catch (Exception Ex)
 				{
