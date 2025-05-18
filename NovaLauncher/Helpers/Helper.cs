@@ -345,13 +345,13 @@ namespace NovaLauncher.Helpers
 				foreach (Process process in processes)
 				{
 					int waited = 0;
-					int stop_waiting = 10000;
+					int stop_waiting = 20000;
 					while (true)
 					{
 						if (process.HasExited) break; // The thing closed!
 						if (waited >= stop_waiting) break; // Timeout
 						Thread.Sleep(1000);
-						process.Kill();
+						process.CloseMainWindow(); // Try to gracefully exit ROBLOX process(es)
 						waited += 1000;
 					}
 					if (waited >= stop_waiting || !process.HasExited)
