@@ -345,13 +345,13 @@ namespace NovaLauncher.Helpers
 				foreach (Process process in processes)
 				{
 					int waited = 0;
-					int stop_waiting = 60000;
+					int stop_waiting = 10000;
 					while (true)
 					{
-						if (string.IsNullOrEmpty(process.MainWindowTitle)) break; // The thing closed!
+						if (process.HasExited) break; // The thing closed!
 						if (waited >= stop_waiting) break; // Timeout
 						Thread.Sleep(1000);
-						process.Refresh();
+						process.Kill();
 						waited += 1000;
 					}
 					if (waited >= stop_waiting || !process.HasExited)

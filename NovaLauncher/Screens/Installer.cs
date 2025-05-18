@@ -148,6 +148,7 @@ namespace NovaLauncher
 
 				if (Program.cliArgs.UpdateLauncher)
 				{
+					launcherUpdateInfo.IsUpgrade = Helpers.App.IsRunningFromInstall();
 					Update(launcherUpdateInfo);
 					return;
 				}
@@ -536,81 +537,86 @@ namespace NovaLauncher
 		#region Download/Install/Upgrade/etc.
 		private void Update(UpdateInfo updateInfo)
 		{
-			UpdateStatus($"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
-			progressBar.Style = ProgressBarStyle.Continuous;
-			cancelButton.Enabled = true;
+			BackgroundWorker bloxWorker = new BackgroundWorker();
 
-			if (updateInfo.IsLauncher)
+			bloxWorker.DoWork += (s, e) =>
 			{
+
+				UpdateStatus($"Waiting for Roblox process(es) to close...");
 				if (!Helpers.App.KillAllBlox())
 				{
 					Close();
 				}
-			}
-
-			webClient = new WebClient();
-			webClient.Headers.Add("user-agent", Helpers.Web.GetUserAgent());
-			updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
-
-			Stopwatch downWatch = new Stopwatch();
-			webClient.DownloadProgressChanged += (s, e) =>
-			{
-				bool isShiftDown = (ModifierKeys & Keys.Shift) == Keys.Shift;
-
-				if (!downWatch.IsRunning) downWatch.Start();
-				int progress = e.ProgressPercentage;
-
-				double bytesRecv = e.BytesReceived;
-				double bytesTotal = e.TotalBytesToReceive;
-				double secsElp = downWatch.Elapsed.TotalSeconds;
-				double speed = secsElp > 0 ? bytesRecv / secsElp : 0;
-
-				double etaSecs = speed > 0 ? (bytesTotal - bytesRecv) / speed : 0;
-				TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
-				string etaStr = $"{eta.Hours:00}:{eta.Minutes:00}:{eta.Seconds:00}";
-
-				// Update everything!
-				progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
-				progressDebugLbl.Visible = isShiftDown;
-				progressBar.Value = progress;
 			};
-			webClient.DownloadFileCompleted += (s, e) =>
+			bloxWorker.RunWorkerCompleted += (bs, be) =>
 			{
-				progressDebugLbl.Visible = false;
+				UpdateStatus($"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
+				progressBar.Style = ProgressBarStyle.Continuous;
+				cancelButton.Enabled = true;
 
-				if (e.Cancelled)
-				{
-					Cancel(updateInfo.DownloadedPath);
-					return;
-				}
-				if (e.Error != null)
-				{
-					Program.logger.Log($"update: Failed to download: {e.Error.Message}\n{e.Error.StackTrace}");
-					MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-					Cancel(updateInfo.DownloadedPath);
-					return;
-				}
+				webClient = new WebClient();
+				webClient.Headers.Add("user-agent", Helpers.Web.GetUserAgent());
+				updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
 
-				BackgroundWorker worker = new BackgroundWorker();
-				worker.DoWork += (s1, ev1) =>
+				Stopwatch downWatch = new Stopwatch();
+				webClient.DownloadProgressChanged += (s, e) =>
 				{
-					int checkCode = Helpers.App.IsDownloadOK(updateInfo);
-					if (checkCode > 0)
+					bool isShiftDown = (ModifierKeys & Keys.Shift) == Keys.Shift;
+
+					if (!downWatch.IsRunning) downWatch.Start();
+					int progress = e.ProgressPercentage;
+
+					double bytesRecv = e.BytesReceived;
+					double bytesTotal = e.TotalBytesToReceive;
+					double secsElp = downWatch.Elapsed.TotalSeconds;
+					double speed = secsElp > 0 ? bytesRecv / secsElp : 0;
+
+					double etaSecs = speed > 0 ? (bytesTotal - bytesRecv) / speed : 0;
+					TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
+					string etaStr = $"{eta.Hours:00}:{eta.Minutes:00}:{eta.Seconds:00}";
+
+					// Update everything!
+					progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
+					progressDebugLbl.Visible = isShiftDown;
+					progressBar.Value = progress;
+				};
+				webClient.DownloadFileCompleted += (s, e) =>
+				{
+					progressDebugLbl.Visible = false;
+
+					if (e.Cancelled)
 					{
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						Cancel(updateInfo.DownloadedPath);
 						return;
 					}
-				};
-				worker.RunWorkerCompleted += (s1, ev1) =>
-				{
-					if (updateInfo.IsLauncher)
+					if (e.Error != null)
 					{
-						if (!updateInfo.IsUpgrade && Helpers.App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
+						Program.logger.Log($"update: Failed to download: {e.Error.Message}\n{e.Error.StackTrace}");
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						Cancel(updateInfo.DownloadedPath);
+						return;
+					}
+
+					BackgroundWorker worker = new BackgroundWorker();
+					worker.DoWork += (s1, ev1) =>
+					{
+						int checkCode = Helpers.App.IsDownloadOK(updateInfo);
+						if (checkCode > 0)
 						{
-							Program.logger.Log($"Wine message triggered");
-							string[] wineMessage = new string[]
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+							Cancel(updateInfo.DownloadedPath);
+							return;
+						}
+					};
+					worker.RunWorkerCompleted += (s1, ev1) =>
+					{
+						if (updateInfo.IsLauncher)
+						{
+							if (!updateInfo.IsUpgrade && Helpers.App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
 							{
+								Program.logger.Log($"Wine message triggered");
+								string[] wineMessage = new string[]
+								{
 									"We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.",
 									"",
 									"To get Novarin working via Wine, here's what you need to do:",
@@ -622,25 +628,28 @@ namespace NovaLauncher
 									"P.S. If your scripting this, you can pass in -w to the setup to hide this warning.",
 									"",
 									"Stay safe on your Linux travels!"
-							};
-							MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+								};
+								MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							}
 						}
-					}
-					Install(updateInfo);
+						Install(updateInfo);
 
+					};
+					worker.RunWorkerAsync();
 				};
-				worker.RunWorkerAsync();
+				try
+				{
+					webClient.DownloadFileAsync(new Uri(updateInfo.Url), updateInfo.DownloadedPath);
+				}
+				catch (Exception e)
+				{
+					Program.logger.Log($"update: Failed to start download: {e.Message}\n{e.StackTrace}");
+					MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
+					Cancel(updateInfo.DownloadedPath);
+				}
+
 			};
-			try
-			{
-				webClient.DownloadFileAsync(new Uri(updateInfo.Url), updateInfo.DownloadedPath);
-			}
-			catch (Exception e)
-			{
-				Program.logger.Log($"update: Failed to start download: {e.Message}\n{e.StackTrace}");
-				MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
-				Cancel(updateInfo.DownloadedPath);
-			}
+			bloxWorker.RunWorkerAsync();
 		}
 
 		private void CreateProtocolOpenKeys(string installPath)
@@ -806,7 +815,7 @@ namespace NovaLauncher
 			{
 				if (e.Result != null)
 				{
-					Program.logger.Log($"install: Failed to extract: {e.Error.Message}\n{e.Error.StackTrace}");
+					Program.logger.Log($"install: Failed to extract: {(e.Error != null ? e.Error.Message : e.Result)}{(e.Error != null ? "\n" + e.Error.StackTrace : "")}");
 					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 					if (retry == DialogResult.Retry)
 					{
