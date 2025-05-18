@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Windows.Forms;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -332,6 +334,35 @@ namespace NovaLauncher.Helpers
 		{
 			return $"{new Microsoft.VisualBasic.Devices.ComputerInfo().OSFullName}";
 
+		}
+
+		public static bool KillAllBlox()
+		{
+			string[] processToAxe = new string[] { "RobloxPlayerBeta", "NovarinPlayerBeta", "NovaHost", "RobloxStudioBeta", "NovarinStudioBeta", "NovarinRPCManager" };
+			foreach (string processName in processToAxe)
+			{
+				Process[] processes = Process.GetProcessesByName(processName);
+				foreach (Process process in processes)
+				{
+					int waited = 0;
+					int stop_waiting = 60000;
+					while (true)
+					{
+						if (string.IsNullOrEmpty(process.MainWindowTitle)) break; // The thing closed!
+						if (waited >= stop_waiting) break; // Timeout
+						Thread.Sleep(1000);
+						process.Refresh();
+						waited += 1000;
+					}
+					if (waited >= stop_waiting || !process.HasExited)
+					{
+						Program.logger.Log($"KillAllBlox: Failed to close because: {(waited >= stop_waiting ? "timeout" : "process not exited")}");
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.KillTimeout), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 	}
 	#endregion

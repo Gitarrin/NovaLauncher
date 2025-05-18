@@ -24,15 +24,16 @@ namespace NovaLauncher
 			public static ErrorBase LaunchClientFailed { get; } = new ErrorBase("120-0012", "The provided client ({CLIENT}) is not supported on this build of {APPNAME} or is invalid.");
 			public static ErrorBase LaunchClientTimeout { get; } = new ErrorBase("120-0013", "{CLIENT} did not launch in time.");
 			public static ErrorBase LaunchClientNotAvailable { get; } = new ErrorBase("120-0014", "{CLIENT} is no longer available.");
+			public static ErrorBase KillTimeout { get; } = new ErrorBase("120-0015", "A client or studio process did not close in time.");
 		}
 
 		public static class Uninstaller
 		{
-			public static ErrorBase PurgeInstallDirFailed { get; } = new ErrorBase("120-0015", "Failed to purge installation directory.\n{ERROR}");
-			public static ErrorBase CreateCleanupFailed { get; } = new ErrorBase("120-0016", "Failed to create cleanup file.\n{ERROR}");
-			public static ErrorBase StartCleanupFailed { get; } = new ErrorBase("120-0017", "Failed to start cleanup file.\n{ERROR}");
-			public static ErrorBase DeleteProtocolKeysFailed { get; } = new ErrorBase("120-0018", "Failed to remove open protocol keys.\n{ERROR}");
-			public static ErrorBase DeleteUninstallerKeysFailed { get; } = new ErrorBase("120-0019", "Failed to remove uninstaller keys.\n{ERROR}");
+			public static ErrorBase PurgeInstallDirFailed { get; } = new ErrorBase("120-0030", "Failed to purge installation directory.\n{ERROR}");
+			public static ErrorBase CreateCleanupFailed { get; } = new ErrorBase("120-0031", "Failed to create cleanup file.\n{ERROR}");
+			public static ErrorBase StartCleanupFailed { get; } = new ErrorBase("120-0032", "Failed to start cleanup file.\n{ERROR}");
+			public static ErrorBase DeleteProtocolKeysFailed { get; } = new ErrorBase("120-0033", "Failed to remove open protocol keys.\n{ERROR}");
+			public static ErrorBase DeleteUninstallerKeysFailed { get; } = new ErrorBase("120-0034", "Failed to remove uninstaller keys.\n{ERROR}");
 		}
 
 		internal static readonly Dictionary<string, string> DefaultReplacements = new Dictionary<string, string>()

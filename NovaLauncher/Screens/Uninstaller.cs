@@ -60,16 +60,6 @@ namespace NovaLauncher
 			}
 		}
 
-		public void EndRunningProcesses()
-		{
-			// Makes sure that the app is closed before uninstalling
-			Process[] processes = Process.GetProcessesByName("RobloxPlayerBeta");
-			foreach (Process process in processes)
-			{
-				process.Kill();
-			}
-		}
-
 		private void DeleteProtocolOpenKeys()
 		{
 			try
@@ -181,7 +171,7 @@ exit /b 0
 			{
 				try
 				{
-					EndRunningProcesses();
+					if (!Helpers.App.KillAllBlox()) throw new Exception("KillAllBlox failed.");
 					DeleteProtocolOpenKeys();
 					DeleteUninstallerKeys();
 					DeleteShortcuts();

@@ -540,6 +540,14 @@ namespace NovaLauncher
 			progressBar.Style = ProgressBarStyle.Continuous;
 			cancelButton.Enabled = true;
 
+			if (updateInfo.IsLauncher)
+			{
+				if (!Helpers.App.KillAllBlox())
+				{
+					Close();
+				}
+			}
+
 			webClient = new WebClient();
 			webClient.Headers.Add("user-agent", Helpers.Web.GetUserAgent());
 			updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
