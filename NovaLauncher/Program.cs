@@ -53,9 +53,9 @@ namespace NovaLauncher
 				};
 			};
 
-			if (Control.ModifierKeys == Keys.Shift) {
-				Config.Debug = true;
-			}
+			// Enable debug either by CLI or by holding SHIFT
+			if (cliArgs.ForceDebug) Config.Debug = true;
+			else if (Control.ModifierKeys == Keys.Shift) Config.Debug = true;
 
 			logger = new Logger();
 			logger.Log($"{Config.AppName}  -  v{Helpers.App.GetInstalledVersion()} on {Helpers.App.GetOS()}");

@@ -27,6 +27,8 @@ namespace NovaLauncher
 
 		[Option('w', "hide-wine-message", Required = false, HelpText = "Disables a warning when using Wine")]
 		public bool HideWineMessage { get; set; }
+		[Option('d', "debug", Required = false, HelpText = "Forces Novarin Launcher to generate a debug log file.")]
+		public bool ForceDebug { get; set; }
 
 		[ParserState]
 		public IParserState LastParserState { get; set; }
