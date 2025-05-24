@@ -26,8 +26,11 @@ namespace NovaLauncher
 
 		private void UpdateStatus(string text)
 		{
-			status.Text = text;
-			Program.logger.Log($"statusText: {text}");
+			Action f = () => {
+				status.Text = text;
+				Program.logger.Log($"statusText: {text}");
+			};
+			if (this.InvokeRequired) this.Invoke(f); else f();
 		}
 
 
@@ -77,6 +80,8 @@ namespace NovaLauncher
 			UpdateStatus($"Connecting to {Config.AppShortName}...");
 			string launcherVersion = Helpers.App.GetInstalledVersion();
 
+			string netFX = Helpers.App.GetNETVersion()[1];
+
 			BackgroundWorker versionWorker = new BackgroundWorker();
 			versionWorker.DoWork += (s, ev) =>
 			{
@@ -89,8 +94,25 @@ namespace NovaLauncher
 					return;
 				}
 
+#if NET35
+				try
+				{
+					RegistryKey NET4 = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\NET Framework Setup\NDP\v4\Full");
+					if (NET4 != null)
+					{
+						if (string.Compare((string)NET4.GetValue(@"Version"), "4.8.00000") == 1)
+						{
+							MessageBox.Show("Hello! This is the Novarin Launcher.\nWe see you are using the .NET Framework 3.5 Launcher\nYou also have .NET Framework 4.8 installed.\nFor the best experience, we'll now switch to the .NET Framework 4.8 version for you :)", Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+							netFX = "net48";
+						}
+					}
+				} catch
+				{
+				}
+#endif
+
 				// Now, check the Launcher version.
-				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>(Config.SelectedServer + Config.LauncherSetup);
+				ev.Result = Helpers.Web.GetLatestServerVersionInfo<LatestLauncherInfo>($"{Config.SelectedServer}{Config.LauncherSetup}?f={netFX}");
 			};
 			versionWorker.RunWorkerCompleted += (s, ev) =>
 			{
@@ -146,7 +168,7 @@ namespace NovaLauncher
 					InstallPath = Config.BaseInstallPath,
 				};
 
-				if (Program.cliArgs.UpdateLauncher)
+				if (Helpers.App.GetNETVersion()[1] != netFX || Program.cliArgs.UpdateLauncher)
 				{
 					launcherUpdateInfo.IsUpgrade = Helpers.App.IsRunningFromInstall();
 					Update(launcherUpdateInfo);
@@ -592,7 +614,7 @@ namespace NovaLauncher
 					if (e.Error != null)
 					{
 						Program.logger.Log($"update: Failed to download: {e.Error.Message}\n{e.Error.StackTrace}");
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", e.Error.Message} }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						Cancel(updateInfo.DownloadedPath);
 						return;
 					}
@@ -789,7 +811,7 @@ namespace NovaLauncher
 							}
 						}
 
-						this.Invoke(new Action(() => { UpdateStatus($"Configuring {updateInfo.Name}..."); }));
+						UpdateStatus($"Configuring {updateInfo.Name}...");
 
 						if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(updateInfo.InstallPath);
 						Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
@@ -808,15 +830,15 @@ namespace NovaLauncher
 				catch (Exception exc)
 				{
 					e.Result = exc;
-					return;
 				};
 			};
 			worker.RunWorkerCompleted += (s, e) =>
 			{
-				if (e.Result != null)
+				Exception exc = e.Result is Exception ? (Exception)e.Result : e.Error;
+				if (exc != null)
 				{
-					Program.logger.Log($"install: Failed to extract: {(e.Error != null ? e.Error.Message : e.Result)}{(e.Error != null ? "\n" + e.Error.StackTrace : "")}");
-					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+					Program.logger.Log($"install: Failed to extract: {exc.Message}{(exc.StackTrace != null ? "\n" + exc.StackTrace : "")}");
+					DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{ERROR}", exc.Message }, { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 					if (retry == DialogResult.Retry)
 					{
 						Install(updateInfo);

@@ -10,13 +10,14 @@ namespace NovaLauncher
 		public static ErrorBase GoofedArgs { get; } = new ErrorBase("120-0005", "ya dun goofed up the poor poor arguments :(");
 
 
-		public static class Installer {
+		public static class Installer
+		{
 			public static ErrorBase ConnectFailed { get; } = new ErrorBase("120-0001", "We were unable to connect to our servers. Check your internet connection.\nYou may also try to set your DNS to 1.1.1.1 or 8.8.8.8.");
 			public static ErrorBase ConfigureFailed { get; } = new ErrorBase("120-0002", "Error while configuring {APPNAME}.");
 			public static ErrorBase LaunchFailed { get; } = new ErrorBase("120-0003", "Failed to launch {APPNAME}.");
 			public static ErrorBase CreateUninstallKeys { get; } = new ErrorBase("120-0004", "Failed to create uninstall keys.");
-			public static ErrorBase ExtractFailed { get; } = new ErrorBase("120-0006", "An error occurred while attempting to extract the client.\n{INSTALLPATH}");
-			public static ErrorBase DownloadFailed { get; } = new ErrorBase("120-0007", "An error occurred while trying to download {APPNAME}!\nThe installer will now close.");
+			public static ErrorBase ExtractFailed { get; } = new ErrorBase("120-0006", "An error occurred while attempting to extract the client.\n{ERROR}\n{INSTALLPATH}");
+			public static ErrorBase DownloadFailed { get; } = new ErrorBase("120-0007", "An error occurred while trying to download {APPNAME}!\n{ERROR}\nThe installer will now close.");
 			public static ErrorBase DownloadCorrupted { get; } = new ErrorBase("120-0008", "Downloaded file is corrupted. Please try again.\n(Got Code {CHECKSUMCODE})");
 			public static ErrorBase DownloadStartFail { get; } = new ErrorBase("120-0009", "Failed to start download.");
 			public static ErrorBase RPBNotFound { get; } = new ErrorBase("120-0010", "Hello. We cannot Find RobloxPlayerBeta.exe. It has ran away. We will try to reinstall now.");
@@ -49,7 +50,7 @@ namespace NovaLauncher
 			Dictionary<string, string> replacementsMerged = new Dictionary<string, string>(DefaultReplacements);
 			if (moreReplacements != null)
 			{
-				foreach (KeyValuePair<string,string> pair in moreReplacements)
+				foreach (KeyValuePair<string, string> pair in moreReplacements)
 				{
 					replacementsMerged[pair.Key] = pair.Value;
 				};

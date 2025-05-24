@@ -70,7 +70,8 @@ namespace NovaLauncher.Helpers
 							response.StatusCode == HttpStatusCode.OK &&
 							!recvData.Contains("Server Down") &&
 							!recvData.Contains("Error")
-						) {
+						)
+						{
 							Program.logger.Log($"serverSelector: {serverIndex} selected!");
 							Config.SelectedServer = server;
 							return true;
@@ -249,6 +250,18 @@ namespace NovaLauncher.Helpers
 				return version.Version;
 			}
 			catch { return ""; }
+		}
+
+		public static string[] GetNETVersion()
+		{
+			// Get the CLR version | Get the targeted version
+			string[] netData = new string[] { Environment.Version.ToString(), "UNKNOWN" };
+#if NET35
+			netData[1] = "net35";
+#else
+			netData[1] = "net48";
+#endif
+			return netData;
 		}
 
 		public static bool IsRunningFromInstall()
