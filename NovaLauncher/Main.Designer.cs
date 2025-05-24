@@ -31,7 +31,19 @@ namespace NovaLauncher
         private void InitializeComponent()
         {
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
+			this.verLbl = new System.Windows.Forms.Label();
 			this.SuspendLayout();
+			// 
+			// verLbl
+			// 
+			this.verLbl.AutoSize = true;
+			this.verLbl.Font = new System.Drawing.Font("Arial", 6F);
+			this.verLbl.ForeColor = System.Drawing.Color.White;
+			this.verLbl.Location = new System.Drawing.Point(12, 307);
+			this.verLbl.Name = "verLbl";
+			this.verLbl.Size = new System.Drawing.Size(53, 10);
+			this.verLbl.TabIndex = 0;
+			this.verLbl.Text = "NovaLauncher";
 			// 
 			// Main
 			// 
@@ -40,6 +52,7 @@ namespace NovaLauncher
 			this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
 			this.ClientSize = new System.Drawing.Size(498, 326);
 			this.ControlBox = false;
+			this.Controls.Add(this.verLbl);
 			this.DoubleBuffered = true;
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -50,10 +63,13 @@ namespace NovaLauncher
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.TransparencyKey = System.Drawing.Color.Transparent;
 			this.ResumeLayout(false);
+			this.PerformLayout();
 
         }
 
-        #endregion
-    }
+		#endregion
+
+		private System.Windows.Forms.Label verLbl;
+	}
 }
 

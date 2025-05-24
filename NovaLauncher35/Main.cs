@@ -15,15 +15,17 @@ namespace NovaLauncher
 				Dock = DockStyle.Fill
 			};
 			this.Controls.Add(panelContainer);
+			verLbl.Visible = false;
 
 			this.WindowState = FormWindowState.Minimized;
 			this.Show();
 			this.WindowState = FormWindowState.Normal;
+			this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
 
-			if (!Config.Debug && Control.ModifierKeys == Keys.Shift)
-			{
-				Config.Debug = true;
-			}
+			if (!Config.Debug && Control.ModifierKeys == Keys.Shift) Config.Debug = true;
+			if (Config.Debug) verLbl.Visible = true;
+
+			verLbl.Text = $"NovaLauncher {Helpers.App.GetInstalledVersion()}  - Running {(Config.Debug ? " in debug" : "normal")}.";
 
 			if (Program.cliArgs.Uninstall)
 			{
