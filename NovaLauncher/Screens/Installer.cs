@@ -140,8 +140,7 @@ namespace NovaLauncher
 						if (alert.CanContinue)
 						{
 							MessageBox.Show(alert.Message, Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-						}
-						else
+						} else
 						{
 							progressBar.Visible = false;
 							progressDebugLbl.Visible = false;
@@ -615,7 +614,7 @@ namespace NovaLauncher
 					if (e.Error != null)
 					{
 						Program.logger.Log($"update: Failed to download: {e.Error.Message}\n{e.Error.StackTrace}");
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", e.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", e.Error.Message} }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						Cancel(updateInfo.DownloadedPath);
 						return;
 					}

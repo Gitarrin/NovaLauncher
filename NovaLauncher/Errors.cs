@@ -10,8 +10,7 @@ namespace NovaLauncher
 		public static ErrorBase GoofedArgs { get; } = new ErrorBase("120-0005", "ya dun goofed up the poor poor arguments :(");
 
 
-		public static class Installer
-		{
+		public static class Installer {
 			public static ErrorBase ConnectFailed { get; } = new ErrorBase("120-0001", "We were unable to connect to our servers. Check your internet connection.\nYou may also try to set your DNS to 1.1.1.1 or 8.8.8.8.");
 			public static ErrorBase ConfigureFailed { get; } = new ErrorBase("120-0002", "Error while configuring {APPNAME}.");
 			public static ErrorBase LaunchFailed { get; } = new ErrorBase("120-0003", "Failed to launch {APPNAME}.");
@@ -50,7 +49,7 @@ namespace NovaLauncher
 			Dictionary<string, string> replacementsMerged = new Dictionary<string, string>(DefaultReplacements);
 			if (moreReplacements != null)
 			{
-				foreach (KeyValuePair<string, string> pair in moreReplacements)
+				foreach (KeyValuePair<string,string> pair in moreReplacements)
 				{
 					replacementsMerged[pair.Key] = pair.Value;
 				};

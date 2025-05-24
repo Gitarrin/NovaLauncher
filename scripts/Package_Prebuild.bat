@@ -2,10 +2,12 @@
 setlocal enabledelayedexpansion
 title Novarin Packager
 
-echo Removing directory (if it exists)
-rmdir /q /s "..\Package App\"
+if "%1"=="" (
+	echo Error: No target framework specified.
+	exit /b 1
+)
 
-echo Creating directory
-mkdir "..\Package App\"
-mkdir "..\Package App\net35\"
-mkdir "..\Package App\net48\"
+echo Removing directory (if it exists)
+rmdir /q /s "..\..\Package App\%1"
+
+exit /b 0
