@@ -16,6 +16,7 @@ namespace NovaLauncher
 			};
 			this.Controls.Add(panelContainer);
 			verLbl.Visible = false;
+			this.Text = Config.AppName;
 
 			this.WindowState = FormWindowState.Minimized;
 			this.Show();
