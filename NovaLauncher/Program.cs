@@ -78,7 +78,7 @@ namespace NovaLauncher
 			{
 				logger.Log("Unhandled Exception!");
 
-				MessageBox.Show(Error.GetErrorMsg(Error.UnhandledException, new System.Collections.Generic.Dictionary<string, string> { { "{ERROR", e.ExceptionObject.ToString() } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show(Error.GetErrorMsg(Error.UnhandledException, new System.Collections.Generic.Dictionary<string, string> { { "{ERROR}", e.ExceptionObject.ToString() } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 				Environment.Exit(-2);
 			};
 
