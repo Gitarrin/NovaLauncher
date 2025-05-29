@@ -60,7 +60,7 @@ namespace NovaLauncher
 				message = message.Replace(pair.Key, pair.Value);
 			};
 
-			Program.logger.Log($"Generated {error.Code} Error: {message}");
+			Program.logger?.Log($"Generated {error.Code} Error: {message}");
 			return $"{message}\n\nError {error.Code}";
 		}
 
