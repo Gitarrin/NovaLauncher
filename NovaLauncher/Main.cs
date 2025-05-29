@@ -26,7 +26,7 @@ namespace NovaLauncher
 			if (!Config.Debug && Control.ModifierKeys == Keys.Shift) Config.Debug = true;
 			if (Config.Debug) verLbl.Visible = true;
 
-			verLbl.Text = $"NovaLauncher {Helpers.App.GetInstalledVersion()}  - Running {(Config.Debug ? " in debug" : "normal")}.";
+			verLbl.Text = $"NovaLauncher {Helpers.App.GetInstalledVersion()}  - Running {(Config.Debug ? "in debug" : "normal")}.";
 
 			if (Program.cliArgs.Uninstall)
 			{
