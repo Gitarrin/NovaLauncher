@@ -61,8 +61,11 @@ namespace NovaLauncher
 			logger.Log($"{Config.AppName}  -  v{Helpers.App.GetInstalledVersion()} on {Helpers.App.GetOS()}");
 			logger.Log($".NET Framework CLR: {Helpers.App.GetNETVersion()[0]} | .NET Framework Target: {Helpers.App.GetNETVersion()[1]}");
 			logger.Log($" - Running from Base Install path? {Helpers.App.IsRunningFromInstall()}");
-			logger.Log($" - Running Wine? {Helpers.App.IsRunningWine()}");
-			logger.Log($" - Running older Windows? {Helpers.App.IsOlderWindows()}");
+			logger.Log(" - Running Windows? " + (
+				Helpers.App.IsWindows()
+					? $"Yes, on {(Helpers.App.IsOlderWindows() ? "older" : "newer")} Windows"
+					: $"No and {(Helpers.App.IsRunningWine() ? "running" : "not running")} Wine"
+			));
 
 			AppDomain.CurrentDomain.ProcessExit += (s, e) =>
 			{

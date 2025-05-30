@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
@@ -219,6 +220,8 @@ namespace NovaLauncher.Helpers
 
 		public static bool IsOlderWindows()
 		{
+			if (IsWindows()) return false;
+
 			// Checking for Windows 7 and earlier
 			Version osVersion = Environment.OSVersion.Version;
 			return osVersion.Major < 6 || (osVersion.Major == 6 && osVersion.Minor < 2);
@@ -243,7 +246,12 @@ namespace NovaLauncher.Helpers
 		{
 			try
 			{
-				if (client == null) return Process.GetCurrentProcess().MainModule.FileVersionInfo.FileVersion.ToString();
+				if (client == null)
+				{
+					return IsWindows()
+						? Process.GetCurrentProcess().MainModule.FileVersionInfo.FileVersion.ToString()
+						: Assembly.GetExecutingAssembly().GetName().Version.ToString();
+				};
 
 				string versionJson = File.ReadAllText($"{Config.BaseInstallPath}\\{client}\\version.json");
 				VersionJSON version = JsonConvert.DeserializeObject<VersionJSON>(versionJson);
@@ -251,6 +259,8 @@ namespace NovaLauncher.Helpers
 			}
 			catch { return ""; }
 		}
+
+		public static bool IsWindows() => !IsRunningWine() && Environment.OSVersion.Platform == PlatformID.Win32NT;
 
 		public static string[] GetNETVersion()
 		{

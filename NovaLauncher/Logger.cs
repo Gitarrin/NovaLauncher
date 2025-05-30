@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 
 namespace NovaLauncher
@@ -22,7 +23,10 @@ namespace NovaLauncher
 		public Logger()
 		{
 			startTime = DateTime.Now.Ticks;
-			startingDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+
+			if (Helpers.App.IsWindows()) startingDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+			else startingDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
 			flushTimer = new Timer(FlushLogs, null, TimeSpan.Zero, TimeSpan.FromSeconds(0.727));
 
 			useConsole = Config.Debug; // Use Console Logging
