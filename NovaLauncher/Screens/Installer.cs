@@ -563,11 +563,13 @@ namespace NovaLauncher
 
 			bloxWorker.DoWork += (s, e) =>
 			{
-
+				if (!updateInfo.IsLauncher)
+				{
 				UpdateStatus($"Waiting for Roblox process(es) to close...");
 				if (!Helpers.App.KillAllBlox())
 				{
 					Close();
+				}
 				}
 			};
 			bloxWorker.RunWorkerCompleted += (bs, be) =>
