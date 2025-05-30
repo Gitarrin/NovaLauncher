@@ -565,11 +565,11 @@ namespace NovaLauncher
 			{
 				if (!updateInfo.IsLauncher)
 				{
-				UpdateStatus($"Waiting for Roblox process(es) to close...");
-				if (!Helpers.App.KillAllBlox())
-				{
-					Close();
-				}
+					UpdateStatus($"Waiting for Roblox process(es) to close...");
+					if (!Helpers.App.KillAllBlox())
+					{
+						Close();
+					}
 				}
 			};
 			bloxWorker.RunWorkerCompleted += (bs, be) =>
@@ -620,7 +620,7 @@ namespace NovaLauncher
 						Cancel(updateInfo.DownloadedPath);
 						return;
 					}
-
+					 
 					BackgroundWorker worker = new BackgroundWorker();
 					worker.DoWork += (s1, ev1) =>
 					{
@@ -811,20 +811,13 @@ namespace NovaLauncher
 							{
 								Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath);
 							}
-						}
-
-						UpdateStatus($"Configuring {updateInfo.Name}...");
-
-						if (!Helpers.App.IsRunningWine()) CreateProtocolOpenKeys(updateInfo.InstallPath);
-						Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
+						};
 					}
 					else
 					{
 						if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 
 						Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath);
-
-						if (File.Exists(updateInfo.InstallPath + @"\" + gameClient.StudioExecutable)) Helpers.App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", updateInfo.InstallPath + @"\" + gameClient.StudioExecutable, "");
 
 						if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 					};
@@ -855,6 +848,24 @@ namespace NovaLauncher
 					}
 				}
 				if (updateInfo.DownloadedPath != null && File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
+
+				UpdateStatus($"Configuring {updateInfo.Name}...");
+
+				if (!Helpers.App.IsRunningWine())
+				{
+					bool protoCreated = false;
+					try
+					{
+						CreateProtocolOpenKeys(updateInfo.InstallPath);
+						protoCreated = true;
+						Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
+						if (File.Exists(updateInfo.InstallPath + @"\" + gameClient.StudioExecutable)) Helpers.App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", updateInfo.InstallPath + @"\" + gameClient.StudioExecutable, "");
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.ProtocolShortcutFailed, new Dictionary<string, string>() { { "{ERROR}", ex.Message }, { "{PROTOSHORT}", protoCreated ? "Shortcuts" : "Protocol Keys" } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+					}
+				};
 
 				this.Invoke(new Action(() => {
 					if (updateInfo.IsLauncher)

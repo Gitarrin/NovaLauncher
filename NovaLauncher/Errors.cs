@@ -25,6 +25,7 @@ namespace NovaLauncher
 			public static ErrorBase LaunchClientTimeout { get; } = new ErrorBase("120-0013", "{CLIENT} did not launch in time.");
 			public static ErrorBase LaunchClientNotAvailable { get; } = new ErrorBase("120-0014", "{CLIENT} is no longer available.");
 			public static ErrorBase KillTimeout { get; } = new ErrorBase("120-0015", "A client or studio process did not close in time.");
+			public static ErrorBase ProtocolShortcutFailed { get; } = new ErrorBase("120-0016", "Failed to create {PROTOSHORT}.\n{ERROR}");
 		}
 
 		public static class Uninstaller
