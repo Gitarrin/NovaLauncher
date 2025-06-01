@@ -383,10 +383,10 @@ namespace NovaLauncher
 					string serverClientVersion = kvp.Key;
 					LauncherClient serverClient = kvp.Value;
 
-					if (serverClient.Status == LauncherClientStatus.REMOVED)
+					string installPath = Config.BaseInstallPath + @"\" + serverClientVersion;
+					if (serverClient.Status == LauncherClientStatus.REMOVED && Directory.Exists(installPath))
 					{
 						Program.logger.Log($"clientCheck: {serverClient.Name} marked as REMOVED, purging...");
-						string installPath = Config.BaseInstallPath + @"\" + serverClientVersion;
 						try { Helpers.App.PurgeFilesAndFolders(installPath); Directory.Delete(installPath); } catch { };
 					};
 				}
