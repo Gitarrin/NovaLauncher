@@ -112,12 +112,26 @@ namespace NovaLauncher.Helpers
 	#region ZIP
 	public static class ZIP
 	{
-		public static void ExtractZipFile(string archiveFilenameIn, string outFolder, string[] skipOver = null, Action<string, long, long> onBeginUncompression = null)
+		public static void ExtractZipFile(string archiveFilenameIn, string outFolder, string[] skipOver = null, Action<string, string> onBeginUncompression = null)
 		{
+			int currentFile = 0;
+			int totalFiles = 0;
+
+			// Get total files to process
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
 			{
 				ZipEntry entry;
+				while ((entry = zipStream.GetNextEntry()) != null)
+				{
+					if (!entry.IsDirectory && (skipOver == null || !skipOver.Contains(entry.Name)))
+						totalFiles++;
+				}
+				zipStream.Close();
+			}
 
+			// Actually extract
+			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn))) {
+				ZipEntry entry;
 				while ((entry = zipStream.GetNextEntry()) != null)
 				{
 					string filePath = Path.Combine(outFolder, entry.Name);
@@ -130,7 +144,9 @@ namespace NovaLauncher.Helpers
 
 					if (!entry.IsDirectory && (skipOver == null || !skipOver.Contains(entry.Name)))
 					{
-						onBeginUncompression?.Invoke(entry.Name, entry.CompressedSize, entry.Size);
+						currentFile++;
+						onBeginUncompression?.Invoke(entry.Name, $"{currentFile}|{totalFiles}|{entry.CompressedSize}|{entry.Size}");
+
 						using (FileStream fileStream = File.Create(filePath))
 						{
 							byte[] buffer = new byte[2048];
@@ -143,6 +159,7 @@ namespace NovaLauncher.Helpers
 						}
 					}
 				}
+				zipStream.Close();
 			}
 		}
 

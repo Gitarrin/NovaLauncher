@@ -51,6 +51,15 @@ namespace NovaLauncher
 			if (this.InvokeRequired) this.Invoke(f); else f();
 		}
 
+		private void UpdateDebug(string text)
+		{
+			Action f = () => {
+				progressDebugLbl.Text = text;
+				Program.logger.Log($"debugLbl: {text}");
+			};
+			if (this.InvokeRequired) this.Invoke(f); else f();
+		}
+
 
 		#region Launcher
 
@@ -855,8 +864,14 @@ namespace NovaLauncher
 							{
 								AllowShowingDebugLbl = true;
 								Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
-									delegate (string file, long compressedSize, long uncompressedSize) {
-										progressDebugLbl.Text = $"Processing: {file} (c: {Helpers.Web.FormatBytes(compressedSize)} u: {Helpers.Web.FormatBytes(uncompressedSize)})";
+									delegate (string file, string sizeData) {
+										// parts[0] = currentFile
+										// parts[1] = totalFiles
+										// parts[2] = compressedSize
+										// parts[3] = uncompressedSize
+										string[] parts = sizeData.Split('|');
+
+										UpdateDebug($"Processing ({parts[0]}/{parts[1]}): {file} (c: {Helpers.Web.FormatBytes(long.Parse(parts[2]))} u: {Helpers.Web.FormatBytes(long.Parse(parts[3]))})");
 									}
 								);
 								AllowShowingDebugLbl = false;
@@ -869,8 +884,14 @@ namespace NovaLauncher
 
 						AllowShowingDebugLbl = true;
 						Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
-							delegate (string file, long compressedSize, long uncompressedSize) {
-								progressDebugLbl.Text = $"Processing: {file} (c: {Helpers.Web.FormatBytes(compressedSize)} u: {Helpers.Web.FormatBytes(uncompressedSize)})";
+							delegate (string file, string sizeData) {
+								// parts[0] = currentFile
+								// parts[1] = totalFiles
+								// parts[2] = compressedSize
+								// parts[3] = uncompressedSize
+								string[] parts = sizeData.Split('|');
+
+								UpdateDebug($"Processing ({parts[0]}/{parts[1]}): {file} (c: {Helpers.Web.FormatBytes(long.Parse(parts[2]))} u: {Helpers.Web.FormatBytes(long.Parse(parts[3]))})");
 							}
 						);
 						AllowShowingDebugLbl = false;
