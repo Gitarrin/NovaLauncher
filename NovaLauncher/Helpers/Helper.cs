@@ -112,7 +112,7 @@ namespace NovaLauncher.Helpers
 	#region ZIP
 	public static class ZIP
 	{
-		public static void ExtractZipFile(string archiveFilenameIn, string outFolder, string[] skipOver = null)
+		public static void ExtractZipFile(string archiveFilenameIn, string outFolder, string[] skipOver = null, Action<string, long, long> onBeginUncompression = null)
 		{
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
 			{
@@ -130,6 +130,7 @@ namespace NovaLauncher.Helpers
 
 					if (!entry.IsDirectory && (skipOver == null || !skipOver.Contains(entry.Name)))
 					{
+						onBeginUncompression?.Invoke(entry.Name, entry.CompressedSize, entry.Size);
 						using (FileStream fileStream = File.Create(filePath))
 						{
 							byte[] buffer = new byte[2048];

@@ -20,9 +20,26 @@ namespace NovaLauncher
 		private LatestLauncherInfo latestLauncherInfo;
 		private bool LauncherUpgraded = false;
 
+		private bool AllowShowingDebugLbl = false;
+		private readonly System.Windows.Forms.Timer holdingShiftTimer = new System.Windows.Forms.Timer()
+		{
+			Interval = 100
+		};
+
 		public Installer()
 		{
 			InitializeComponent();
+			holdingShiftTimer.Tick += (s, e) =>
+			{
+				if (Config.Debug && AllowShowingDebugLbl)
+				{
+					progressDebugLbl.Visible = (ModifierKeys & Keys.Shift) == Keys.Shift;
+				} else {
+					progressDebugLbl.Visible = false;
+				};
+
+			};
+			holdingShiftTimer.Start();
 		}
 
 		private void UpdateStatus(string text)
@@ -145,7 +162,7 @@ namespace NovaLauncher
 						} else
 						{
 							progressBar.Visible = false;
-							progressDebugLbl.Visible = false;
+							AllowShowingDebugLbl = false;
 							UpdateStatus(alert.Message);
 							cancelButton.Text = "Close";
 							cancelButton.Enabled = true;
@@ -613,7 +630,7 @@ namespace NovaLauncher
 				Stopwatch downWatch = new Stopwatch();
 				webClient.DownloadProgressChanged += (s, e) =>
 				{
-					bool isShiftDown = (ModifierKeys & Keys.Shift) == Keys.Shift;
+					AllowShowingDebugLbl = true;
 
 					if (!downWatch.IsRunning) downWatch.Start();
 					int progress = e.ProgressPercentage;
@@ -629,12 +646,11 @@ namespace NovaLauncher
 
 					// Update everything!
 					progressDebugLbl.Text = $"{progress}% ({Helpers.Web.FormatBytes(bytesRecv)}/{Helpers.Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
-					progressDebugLbl.Visible = isShiftDown;
 					progressBar.Value = progress;
 				};
 				webClient.DownloadFileCompleted += (s, e) =>
 				{
-					progressDebugLbl.Visible = false;
+					AllowShowingDebugLbl = false;
 
 					if (e.Cancelled)
 					{
@@ -837,7 +853,13 @@ namespace NovaLauncher
 							}
 							else
 							{
-								Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath);
+								AllowShowingDebugLbl = true;
+								Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
+									delegate (string file, long compressedSize, long uncompressedSize) {
+										progressDebugLbl.Text = $"Processing: {file} (c: {Helpers.Web.FormatBytes(compressedSize)} u: {Helpers.Web.FormatBytes(uncompressedSize)})";
+									}
+								);
+								AllowShowingDebugLbl = false;
 							}
 						};
 					}
@@ -845,7 +867,13 @@ namespace NovaLauncher
 					{
 						if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 
-						Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath);
+						AllowShowingDebugLbl = true;
+						Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
+							delegate (string file, long compressedSize, long uncompressedSize) {
+								progressDebugLbl.Text = $"Processing: {file} (c: {Helpers.Web.FormatBytes(compressedSize)} u: {Helpers.Web.FormatBytes(uncompressedSize)})";
+							}
+						);
+						AllowShowingDebugLbl = false;
 
 						if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 					};
