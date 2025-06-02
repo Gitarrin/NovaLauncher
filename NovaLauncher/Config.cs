@@ -6,8 +6,9 @@ namespace NovaLauncher
 	{
 		public static readonly string[] Servers = new string[]
 		{
-			"http://n.termy.lol", //main
-			"http://termy.nekos.sh" // mirror
+			"http://n.termy.lol", // Main
+			"http://wowlauncher.novarin.co", // Mirror
+			"http://termy.nekos.sh" // Mirror backup
 		};
 		public static string SelectedServer = "";
 		public static string LauncherSetup = "/client/launcher";
@@ -19,5 +20,6 @@ namespace NovaLauncher
 		public static bool Debug = false;
 
 		public static string BaseInstallPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\{AppShortName}";
-		public static string BaseLegacyInstallPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\Novarizz";	}
+		public static string BaseLegacyInstallPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\Novarizz";
+	}
 }
