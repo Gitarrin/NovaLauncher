@@ -661,7 +661,7 @@ namespace NovaLauncher
 						if (we.Error != null)
 						{
 							Program.logger.Log($"update: Failed to download: {we.Error.Message}\n{we.Error.StackTrace}");
-							MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", e.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
 							Cancel(updateInfo.DownloadedPath);
 							return;
 						}
