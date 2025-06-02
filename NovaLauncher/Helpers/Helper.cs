@@ -385,6 +385,9 @@ namespace NovaLauncher.Helpers
 				Process[] processes = Process.GetProcessesByName(processName);
 				foreach (Process process in processes)
 				{
+					// Don't kill Roblox that isn't ours.
+					if (!process.MainModule.FileName.StartsWith(Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
+
 					int waited = 0;
 					int stop_waiting = 20000;
 					while (true)
