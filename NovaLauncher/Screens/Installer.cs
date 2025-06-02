@@ -358,7 +358,7 @@ namespace NovaLauncher
 					if (Program.cliArgs.Token == null)
 					{
 						// Okay, we weren't launching a client. We'll stop here.
-						if (Helpers.App.IsRunningFromInstall() && LauncherUpgraded) Main.LoadScreen(new Screens.InstallCompleted());
+						if (LauncherUpgraded) Main.LoadScreen(new Screens.InstallCompleted());
 						else
 						{
 							UpdateStatus($"Opening {Config.AppShortName}...");
