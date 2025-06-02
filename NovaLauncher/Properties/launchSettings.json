@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NovaLauncher": {
+      "commandName": "Project",
+      "commandLineArgs": "-d"
+    }
+  }
+}
