@@ -631,7 +631,7 @@ namespace NovaLauncher
 					Stopwatch downWatch = new Stopwatch();
 					webClient.DownloadProgressChanged += (ws, we) =>
 					{
-						progressDebugLbl.Visible = true;
+						if (Config.Debug) progressDebugLbl.Visible = true;
 
 						if (!downWatch.IsRunning) downWatch.Start();
 						int progress = we.ProgressPercentage;
@@ -651,7 +651,7 @@ namespace NovaLauncher
 					};
 					webClient.DownloadFileCompleted += (ws, we) =>
 					{
-						progressDebugLbl.Visible = false;
+						if (Config.Debug) progressDebugLbl.Visible = false;
 
 						if (we.Cancelled)
 						{
@@ -853,7 +853,7 @@ namespace NovaLauncher
 								}
 								else
 								{
-									progressDebugLbl.Visible = true;
+									if (Config.Debug) progressDebugLbl.Visible = true;
 									Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
 										delegate (string file, string sizeData) {
 											// parts[0] = currentFile
@@ -865,7 +865,7 @@ namespace NovaLauncher
 											UpdateDebug($"Processing ({parts[0]}/{parts[1]}): {file} (c: {Helpers.Web.FormatBytes(long.Parse(parts[2]))} u: {Helpers.Web.FormatBytes(long.Parse(parts[3]))})");
 										}
 									);
-									progressDebugLbl.Visible = false;
+									if (Config.Debug) progressDebugLbl.Visible = false;
 								}
 							};
 						}
@@ -873,7 +873,7 @@ namespace NovaLauncher
 						{
 							if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 
-							progressDebugLbl.Visible = true;
+							if (Config.Debug) progressDebugLbl.Visible = true;
 							Helpers.ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
 								delegate (string file, string sizeData) {
 									// parts[0] = currentFile
@@ -885,7 +885,7 @@ namespace NovaLauncher
 									UpdateDebug($"Processing ({parts[0]}/{parts[1]}): {file} (c: {Helpers.Web.FormatBytes(long.Parse(parts[2]))} u: {Helpers.Web.FormatBytes(long.Parse(parts[3]))})");
 								}
 							);
-							progressDebugLbl.Visible = false;
+							if (Config.Debug) progressDebugLbl.Visible = false;
 
 							if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 						};
