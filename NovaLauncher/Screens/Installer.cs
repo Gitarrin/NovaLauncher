@@ -943,11 +943,15 @@ namespace NovaLauncher
 						try
 						{
 							Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
-							if (File.Exists(updateInfo.InstallPath + @"\" + gameClient.StudioExecutable)) Helpers.App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", updateInfo.InstallPath + @"\" + gameClient.StudioExecutable, "");
+							if (
+								gameClient != null &&
+								File.Exists(updateInfo.InstallPath + @"\" + gameClient.StudioExecutable)
+							)
+								Helpers.App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", updateInfo.InstallPath + @"\" + gameClient.StudioExecutable, "");
 						}
 						catch (Exception ex)
 						{
-							MessageBox.Show(Error.GetErrorMsg(Error.Installer.ProtocolShortcutFailed, new Dictionary<string, string>() { { "{ERROR}", ex.Message }, { "{PROTOSHORT}", "Shortcuts" } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.ProtocolShortcutFailed, new Dictionary<string, string>() { { "{ERROR}", ex.Message }, { "{PROTOSHORT}", "Shortcuts" } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						}
 					};
 
