@@ -7,7 +7,7 @@ namespace NovaLauncher
 		public static readonly string[] Servers = new string[]
 		{
 			"http://n.termy.lol", //main
-			"http://termy.is-real.dev" // mirror
+			"http://termy.nekos.sh" // mirror
 		};
 		public static string SelectedServer = "";
 		public static string LauncherSetup = "/client/launcher";
