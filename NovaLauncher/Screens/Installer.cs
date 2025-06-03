@@ -325,7 +325,6 @@ namespace NovaLauncher
 		#region Client
 		private void PerformClientCheck()
 		{
-			UpdateStatus($"Configuring {Config.AppName}...");
 			CreateBackgroundTask(
 				(s, e) =>
 				{
