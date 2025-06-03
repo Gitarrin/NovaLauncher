@@ -155,28 +155,31 @@ namespace NovaLauncher
 					};
 
 					// Alerts stuff first
-					Program.logger.Log($"launcher: Sorting through {latestLauncherInfo.Alerts.Count} alerts.");
-					foreach (LauncherAlert alert in latestLauncherInfo.Alerts)
+					if (latestLauncherInfo.Alerts.Count > 0)
 					{
-						bool alertActive = (long)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds > alert.ActiveUntil;
-						bool launcherAffected = alert.VersionsAffected.Count == 0 || alert.VersionsAffected.Contains(launcherVersion);
-						if (launcherAffected)
+						Program.logger.Log($"launcher: Sorting through {latestLauncherInfo.Alerts.Count} alerts.");
+						foreach (LauncherAlert alert in latestLauncherInfo.Alerts)
 						{
-							if (alert.CanContinue)
+							bool alertActive = (long)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds > alert.ActiveUntil;
+							bool launcherAffected = alert.VersionsAffected.Count == 0 || alert.VersionsAffected.Contains(launcherVersion);
+							if (launcherAffected)
 							{
-								UpdateStatus($"Showing alert...");
-								MessageBox.Show(alert.Message, Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-							}
-							else
-							{
-								progressBar.Visible = false;
-								progressDebugLbl.Visible = false;
-								UpdateStatus(alert.Message);
-								cancelButton.Text = "Close";
-								cancelButton.Enabled = true;
-								cancelButton.Visible = true;
-								cancelButton.Click += (se, e) => Close();
-								return;
+								if (alert.CanContinue)
+								{
+									UpdateStatus($"Showing alert...");
+									MessageBox.Show(alert.Message, Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+								}
+								else
+								{
+									progressBar.Visible = false;
+									progressDebugLbl.Visible = false;
+									UpdateStatus(alert.Message);
+									cancelButton.Text = "Close";
+									cancelButton.Enabled = true;
+									cancelButton.Visible = true;
+									cancelButton.Click += (se, e) => Close();
+									return;
+								}
 							}
 						}
 					}
