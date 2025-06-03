@@ -328,6 +328,7 @@ namespace NovaLauncher
 			CreateBackgroundTask(
 				(s, e) =>
 				{
+					e.Result = false;
 					CreateUninstallKeys(Config.BaseInstallPath);
 					if (!Helpers.App.IsRunningWine())
 					{
@@ -340,9 +341,7 @@ namespace NovaLauncher
 							MessageBox.Show(Error.GetErrorMsg(Error.Installer.ProtocolShortcutFailed, new Dictionary<string, string>() { { "{ERROR}", ex.Message }, { "{PROTOSHORT}", "Protocol Keys" } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 						}
 					};
-				},
-				(s, e) =>
-				{
+
 					// Launcher is all good.
 					if (Program.cliArgs.Token == null)
 					{
@@ -402,7 +401,7 @@ namespace NovaLauncher
 					gameClient = new GameClient
 					{
 						Name = client.Name,
-						InstallPath = Config.BaseInstallPath + @"\" + launchData.Version,
+						InstallPath = $@"{Config.BaseInstallPath}\{launchData.Version}",
 						Executable = client.Executables.Player,
 						StudioExecutable = client.Executables.Studio,
 						HostExecutable = client.Executables.Host,
@@ -418,63 +417,81 @@ namespace NovaLauncher
 						Program.logger.Log($"clientCheck: gameClient Version is {gameClient.Version}");
 					}
 
-					CreateBackgroundTask(
-						(se, ev) =>
+					string exeName;
+					switch (launchData.LaunchType)
+					{
+						case "host":
+							exeName = gameClient.HostExecutable;
+							break;
+						case "studio":
+						case "build":
+							exeName = gameClient.StudioExecutable;
+							break;
+						default:
+							exeName = gameClient.Executable;
+							break;
+					};
+					if (!File.Exists($@"{gameClient.InstallPath}\{exeName}"))
+					{
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.RPBNotFound, new Dictionary<string, string> { { "{EXENAME}", exeName } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						gameClient.Version = null;
+					}
+
+					LatestClientInfo latestClientInfo = client.Status == LauncherClientStatus.PAUSED ? null : Helpers.Web.GetLatestServerVersionInfo<LatestClientInfo>(client.Info);
+
+					if (latestClientInfo == null)
+					{
+						if (!Program.cliArgs.UpdateClient && gameClient.Version != null && client.Status == LauncherClientStatus.PAUSED) PerformClientStart();
+						else if (client.Status == LauncherClientStatus.PAUSED)
 						{
-							ev.Result = client.Status == LauncherClientStatus.PAUSED ? null : Helpers.Web.GetLatestServerVersionInfo<LatestClientInfo>(client.Info);
-						},
-						(se, ev) =>
-						{
-							if (!(ev.Result is LatestClientInfo))
-							{
-								if (!Program.cliArgs.UpdateClient && gameClient.Version != null && client.Status == LauncherClientStatus.PAUSED) PerformClientStart();
-								else if (client.Status == LauncherClientStatus.PAUSED)
-								{
-									MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientNotAvailable, new Dictionary<string, string>() { { "{CLIENT}", client.Name } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-									Close();
-								}
-								else
-								{
-									MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), client.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
-									Close();
-								}
-								return;
-							}
-
-							LatestClientInfo latestClientInfo = ev.Result as LatestClientInfo;
-
-							UpdateInfo clientUpdateInfo = new UpdateInfo
-							{
-								Name = gameClient.Name,
-								Version = latestClientInfo.Version,
-								Url = latestClientInfo.Url,
-								Size = latestClientInfo.Size,
-								IsUpgrade = false,
-								IsLauncher = false,
-								Sha256 = latestClientInfo.Sha256,
-								DoSHACheck = gameClient.ClientCheck,
-								DownloadedPath = "",
-								InstallPath = gameClient.InstallPath,
-							};
-
-							if (Program.cliArgs.UpdateClient || gameClient.Version == null)
-							{
-								Update(clientUpdateInfo);
-								return;
-							}
-							else if (clientUpdateInfo.Version != gameClient.Version)
-							{
-								Program.logger.Log($"clientCheck: gameClient update required: c: {gameClient.Version} s: {clientUpdateInfo.Version}");
-								clientUpdateInfo.IsUpgrade = true;
-								Update(clientUpdateInfo);
-								return;
-							}
-
-							Program.logger.Log($"clientCheck: gameClient up to date.");
-							PerformClientStart();
-							return;
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientNotAvailable, new Dictionary<string, string>() { { "{CLIENT}", client.Name } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+							Close();
 						}
-					);
+						else
+						{
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), client.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+							Close();
+						}
+						return;
+					}
+
+					UpdateInfo clientUpdateInfo = new UpdateInfo
+					{
+						Name = gameClient.Name,
+						Version = latestClientInfo.Version,
+						Url = latestClientInfo.Url,
+						Size = latestClientInfo.Size,
+						IsUpgrade = false,
+						IsLauncher = false,
+						Sha256 = latestClientInfo.Sha256,
+						DoSHACheck = gameClient.ClientCheck,
+						DownloadedPath = "",
+						InstallPath = gameClient.InstallPath,
+					};
+
+					if (Program.cliArgs.UpdateClient || gameClient.Version == null)
+					{
+						Update(clientUpdateInfo);
+						return;
+					}
+					else if (clientUpdateInfo.Version != gameClient.Version)
+					{
+						Program.logger.Log($"clientCheck: gameClient update required: c: {gameClient.Version} s: {clientUpdateInfo.Version}");
+						clientUpdateInfo.IsUpgrade = true;
+						Update(clientUpdateInfo);
+						return;
+					}
+
+					e.Result = true;
+					return;
+				},
+				(s, e) =>
+				{
+					if ((bool)e.Result)
+					{
+						Program.logger.Log($"clientCheck: gameClient up to date.");
+						PerformClientStart();
+					};
 					return;
 				}
 			);
@@ -931,6 +948,7 @@ namespace NovaLauncher
 					{
 						try
 						{
+							Program.logger.Log($"configure: Creating shortcuts...");
 							Helpers.App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
 							if (
 								gameClient != null &&
@@ -945,6 +963,7 @@ namespace NovaLauncher
 					};
 
 					Invoke(new Action(() => {
+						Program.logger.Log($"install: Completed {(updateInfo.IsUpgrade ? "upgrade" : "install")} of {updateInfo.Name}.");
 						if (updateInfo.IsLauncher)
 						{
 							LauncherUpgraded = true;
