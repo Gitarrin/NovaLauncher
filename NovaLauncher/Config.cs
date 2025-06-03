@@ -11,7 +11,7 @@ namespace NovaLauncher
 			"http://termy.nekos.sh" // Mirror backup
 		};
 		public static string SelectedServer = "";
-		public static string LauncherSetup = "/client/launcher";
+		public static string LauncherSetup = "/client/launcher/";
 
 		public static string AppShortName = "Novarin";
 		public static string AppName = $"{AppShortName} Launcher";

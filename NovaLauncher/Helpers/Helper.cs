@@ -63,12 +63,14 @@ namespace NovaLauncher.Helpers
 					HttpWebRequest client = (HttpWebRequest)WebRequest.Create(server);
 					client.UserAgent = GetUserAgent();
 					client.Method = "GET";
+					client.AllowAutoRedirect = false;
 
 					using (HttpWebResponse response = (HttpWebResponse)client.GetResponse())
 					{
 						string recvData = new StreamReader(response.GetResponseStream()).ReadToEnd();
 						if (
 							response.StatusCode == HttpStatusCode.OK &&
+							recvData != null &&
 							!recvData.Contains("Server Down") &&
 							!recvData.Contains("Error")
 						)
