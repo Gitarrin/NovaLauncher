@@ -25,6 +25,21 @@ namespace NovaLauncher
 			InitializeComponent();
 		}
 
+#if NET35
+		private bool SwitchToNewNET() {
+			try
+			{
+				RegistryKey NET4 = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\NET Framework Setup\NDP\v4\Full");
+				if (NET4 != null)
+				{
+					return (string.Compare((string)NET4.GetValue(@"Version"), "4.8.00000") == 1);
+				}
+			}
+			catch { }
+			return false;
+		}
+#endif
+
 		private void CreateBackgroundTask(DoWorkEventHandler doWorkHandler, RunWorkerCompletedEventHandler finishWorkHandler)
 		{
 			BackgroundWorker bgWorker = new BackgroundWorker();
@@ -113,20 +128,11 @@ namespace NovaLauncher
 					}
 
 #if NET35
-					try
-					{
-						RegistryKey NET4 = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\NET Framework Setup\NDP\v4\Full");
-						if (NET4 != null)
-						{
-							if (string.Compare((string)NET4.GetValue(@"Version"), "4.8.00000") == 1)
-							{
-								Program.logger.Log("launcher: Detected .NET Framework 3.5 & .NET Framework 4.8; alerting user of switchover to .NET Framework 4.8 version.");
-								MessageBox.Show("Hello! This is the Novarin Launcher.\nWe see you are using the .NET Framework 3.5 Launcher and you have .NET Framework 4.8 installed.\nFor the best experience, we'll now switch to the .NET Framework 4.8 version for you :)", Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-								netFX = "net48";
-							}
-						}
-					}
-					catch { }
+					if (SwitchToNewNET()) {
+						Program.logger.Log("launcher: Detected .NET Framework 3.5 & .NET Framework 4.8; alerting user of switchover to .NET Framework 4.8 version.");
+						MessageBox.Show("Hello! This is the Novarin Launcher.\nWe see you are using the .NET Framework 3.5 Launcher and you have .NET Framework 4.8 installed.\nFor the best experience, we'll now switch to the .NET Framework 4.8 version for you :)", Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+						netFX = "net48";
+					};
 #endif
 
 					// Now, check the Launcher version.
@@ -940,6 +946,14 @@ namespace NovaLauncher
 						if (updateInfo.IsLauncher)
 						{
 							LauncherUpgraded = true;
+#if NET35
+							if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
+							{
+								Program.cliArgs.UpdateInfo = null;
+								PerformLauncherCheck();
+								return;
+							}
+#endif
 							if (CheckMigrate()) MigrateInstall();
 							else PerformClientCheck();
 						}
@@ -949,7 +963,7 @@ namespace NovaLauncher
 			);
 			return;
 		}
-		#endregion
+#endregion
 
 		#region Form
 		private void Cancel(string tempPath)
