@@ -870,96 +870,74 @@ namespace NovaLauncher.Helpers
 				CreateBackgroundTask(
 					(s, e) =>
 					{
-						Thread.Sleep(150);
 						try
 						{
-							DoThingsWInvoke(new Action(() =>
+							if (updateInfo.IsLauncher)
 							{
-								if (updateInfo.IsLauncher)
+								if (Program.cliArgs.UpdateInfo == null)
 								{
-									if (Program.cliArgs.UpdateInfo == null)
+									// Cleanup files in the Launcher directory (or create if not exist) & Extract the Launcher stuff
+									if (Directory.Exists(updateInfo.InstallPath))
 									{
-										// Cleanup files in the Launcher directory (or create if not exist) & Extract the Launcher stuff
-										if (Directory.Exists(updateInfo.InstallPath))
+										string[] files = Directory.GetFiles(updateInfo.InstallPath);
+										foreach (string file in files)
 										{
-											string[] files = Directory.GetFiles(updateInfo.InstallPath);
-											foreach (string file in files)
-											{
-												if (file == updateInfo.InstallPath + @"\" + Config.AppEXE) continue;
-												File.Delete(file);
-											}
+											if (file == updateInfo.InstallPath + @"\" + Config.AppEXE) continue;
+											File.Delete(file);
 										}
-										else Directory.CreateDirectory(updateInfo.InstallPath);
+									}
+									else Directory.CreateDirectory(updateInfo.InstallPath);
 
-										if (updateInfo.IsUpgrade)
-										{
-											ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, new string[] { Config.AppEXE });
-											ZIP.ExtractSingleFileFromZip(updateInfo.DownloadedPath, Path.GetTempPath(), Config.AppEXE);
+									if (updateInfo.IsUpgrade)
+									{
+										ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, new string[] { Config.AppEXE });
+										ZIP.ExtractSingleFileFromZip(updateInfo.DownloadedPath, Path.GetTempPath(), Config.AppEXE);
 
-											// Because we're about to replace the current EXE, we need to restart the launcher.
-											updateInfo.IsUpgrade = false; // We already did this step.
-											string[] reUpInfo = {
+										// Because we're about to replace the current EXE, we need to restart the launcher.
+										updateInfo.IsUpgrade = false; // We already did this step.
+										string[] reUpInfo = {
 												Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
 												Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
 											};
-											string[] args = Environment.GetCommandLineArgs();
-											string[] cmds =
-											{
+										string[] args = Environment.GetCommandLineArgs();
+										string[] cmds =
+										{
 												$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
 												$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{updateInfo.InstallPath}\\{Config.AppEXE}\"",
 												$"{string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
 											};
-											Process.Start(new ProcessStartInfo
-											{
-												FileName = "cmd.exe",
-												Arguments = $"/c {string.Join(" && ", cmds)}",
-												WindowStyle = ProcessWindowStyle.Hidden,
-												CreateNoWindow = true
-											});
-											Close();
-											return;
-										}
-										else
+										Process.Start(new ProcessStartInfo
 										{
-											if (Config.Debug) instance.progressLbl.Visible = true;
-											ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
-												delegate (string file, string sizeData)
-												{
-													// parts[0] = currentFile
-													// parts[1] = totalFiles
-													// parts[2] = compressedSize
-													// parts[3] = uncompressedSize
-													string[] parts = sizeData.Split('|');
-
-													UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
-												}
-											);
-											if (Config.Debug) instance.progressLbl.Visible = false;
-										}
+											FileName = "cmd.exe",
+											Arguments = $"/c {string.Join(" && ", cmds)}",
+											WindowStyle = ProcessWindowStyle.Hidden,
+											CreateNoWindow = true
+										});
+										Close();
+										return;
 									};
-								}
-								else
-								{
-									if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
-
-									if (Config.Debug) instance.progressLbl.Visible = true;
-									ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
-										delegate (string file, string sizeData)
-										{
-											// parts[0] = currentFile
-											// parts[1] = totalFiles
-											// parts[2] = compressedSize
-											// parts[3] = uncompressedSize
-											string[] parts = sizeData.Split('|');
-
-											UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
-										}
-									);
-									if (Config.Debug) instance.progressLbl.Visible = false;
-
-									if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 								};
-							}));
+							} else
+							{
+								if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
+							};
+
+							if (Config.Debug) instance.progressLbl.Visible = true;
+							ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
+								delegate (string file, string sizeData)
+								{
+									// parts[0] = currentFile
+									// parts[1] = totalFiles
+									// parts[2] = compressedSize
+									// parts[3] = uncompressedSize
+									string[] parts = sizeData.Split('|');
+
+									UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
+								}
+							);
+							if (Config.Debug) instance.progressLbl.Visible = false;
+
+							if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 						}
 						catch (Exception exc)
 						{

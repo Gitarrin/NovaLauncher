@@ -46,12 +46,11 @@ namespace NovaLauncher
 				{
 					currentInstance = new LauncherForm(this);
 					Thread.Sleep(500);
-				},
-				(s, e) =>
-				{
+
 					if (Program.cliArgs.Uninstall) currentInstance.uninstaller.Init();
 					else currentInstance.installer.Init();
-				}
+				},
+				(s, e) => { }
 			);
 
 		}
