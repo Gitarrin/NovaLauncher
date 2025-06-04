@@ -53,6 +53,10 @@ namespace NovaLauncher
 				};
 			};
 
+			// Enable debug either by CLI or by holding SHIFT
+			if (cliArgs.ForceDebug) Config.Debug = true;
+			else if (Control.ModifierKeys == Keys.Shift) Config.Debug = true;
+
 			// Start logger
 			logger = new Logger();
 			logger.Log($"{Config.AppName}  -  v{Helpers.App.GetInstalledVersion()} on {Helpers.App.GetOS()}");
@@ -63,10 +67,6 @@ namespace NovaLauncher
 					? $"Yes, on {(Helpers.App.IsOlderWindows() ? "older" : "newer")} Windows"
 					: $"No and {(Helpers.App.IsRunningWine() ? "running" : "not running")} Wine"
 			));
-
-			// Enable debug either by CLI or by holding SHIFT
-			if (cliArgs.ForceDebug) Config.Debug = true;
-			else if (Control.ModifierKeys == Keys.Shift) Config.Debug = true;
 
 			AppDomain.CurrentDomain.ProcessExit += (s, e) =>
 			{
