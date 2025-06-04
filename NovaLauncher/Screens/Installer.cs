@@ -759,11 +759,13 @@ namespace NovaLauncher
 
 				Helpers.Registry.RemoveRegKeys(classesKey, "novarin"); // Delete old one
 
+				string fullPath = $@"{installPath}\{Config.AppEXE}";
+
 				RegistryKey key = classesKey.CreateSubKey(Config.AppProtocol);
-				key.CreateSubKey("DefaultIcon").SetValue("", installPath + @"\" + Config.AppEXE);
-				key.SetValue("", Config.AppProtocol + ":Protocol");
+				key.CreateSubKey("DefaultIcon").SetValue("", fullPath);
+				key.SetValue("", $"URL:{Config.AppProtocol}");
 				key.SetValue("URL Protocol", "");
-				key.CreateSubKey(@"shell\open\command").SetValue("", installPath + @"\" + Config.AppEXE + " --token %1");
+				key.CreateSubKey(@"shell\open\command").SetValue("", $"\"{fullPath}\" --token \"%1\"");
 				key.Close();
 			}
 			catch (Exception Ex)
