@@ -203,7 +203,7 @@ namespace NovaLauncher.Helpers
 									{
 										DoThingsWInvoke(new Action(() => {
 											instance.progressBar.Visible = false;
-											instance.progressDebugLbl.Visible = false;
+											instance.progressLbl.Visible = false;
 											UpdateTextWithLog(instance.statusLbl, alert.Message);
 											instance.actionBtn.Text = "Close";
 											instance.actionBtn.Enabled = true;
@@ -690,7 +690,7 @@ namespace NovaLauncher.Helpers
 							Stopwatch downWatch = new Stopwatch();
 							webClient.DownloadProgressChanged += (ws, we) =>
 							{
-								if (Config.Debug) instance.progressDebugLbl.Visible = true;
+								instance.progressLbl.Visible = true;
 
 								if (!downWatch.IsRunning) downWatch.Start();
 								int progress = we.ProgressPercentage;
@@ -705,12 +705,14 @@ namespace NovaLauncher.Helpers
 								string etaStr = $"{eta.Hours:00}:{eta.Minutes:00}:{eta.Seconds:00}";
 
 								// Update everything!
-								instance.progressDebugLbl.Text = $"{progress}% ({Web.FormatBytes(bytesRecv)}/{Web.FormatBytes(bytesTotal)} | {Helpers.Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
+								instance.progressLbl.Text = Config.Debug
+									? $"{progress}% ({Web.FormatBytes(bytesRecv)}/{Web.FormatBytes(bytesTotal)} | {Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}"
+									: $"{progress}% ({Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
 								instance.progressBar.Value = progress;
 							};
 							webClient.DownloadFileCompleted += (ws, we) =>
 							{
-								if (Config.Debug) instance.progressDebugLbl.Visible = false;
+								instance.progressLbl.Visible = false;
 
 								if (we.Cancelled)
 								{
@@ -919,7 +921,7 @@ namespace NovaLauncher.Helpers
 										}
 										else
 										{
-											if (Config.Debug) instance.progressDebugLbl.Visible = true;
+											if (Config.Debug) instance.progressLbl.Visible = true;
 											ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
 												delegate (string file, string sizeData)
 												{
@@ -929,10 +931,10 @@ namespace NovaLauncher.Helpers
 													// parts[3] = uncompressedSize
 													string[] parts = sizeData.Split('|');
 
-													UpdateTextWithLog(instance.progressDebugLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
+													UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
 												}
 											);
-											if (Config.Debug) instance.progressDebugLbl.Visible = false;
+											if (Config.Debug) instance.progressLbl.Visible = false;
 										}
 									};
 								}
@@ -940,7 +942,7 @@ namespace NovaLauncher.Helpers
 								{
 									if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 
-									if (Config.Debug) instance.progressDebugLbl.Visible = true;
+									if (Config.Debug) instance.progressLbl.Visible = true;
 									ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
 										delegate (string file, string sizeData)
 										{
@@ -950,10 +952,10 @@ namespace NovaLauncher.Helpers
 											// parts[3] = uncompressedSize
 											string[] parts = sizeData.Split('|');
 
-											UpdateTextWithLog(instance.progressDebugLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
+											UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
 										}
 									);
-									if (Config.Debug) instance.progressDebugLbl.Visible = false;
+									if (Config.Debug) instance.progressLbl.Visible = false;
 
 									if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 								};
@@ -1048,11 +1050,11 @@ namespace NovaLauncher.Helpers
 					instance.statusLbl.Location = new Point((instance.ClientSize.Width - instance.statusLbl.Width) / 2, instance.statusLbl.Location.Y);
 					instance.statusLbl.Visible = true;
 
-					instance.progressDebugLbl.AutoSize = true;
-					instance.progressDebugLbl.Font = new Font("Comic Sans MS", 12, FontStyle.Regular, GraphicsUnit.Point);
-					instance.progressDebugLbl.Text = "Click the 'Join' button on any game to join the action!";
-					instance.progressDebugLbl.Location = new Point((instance.ClientSize.Width - instance.progressDebugLbl.Width) / 2, instance.progressBar.Location.Y);
-					instance.progressDebugLbl.Visible = true;
+					instance.progressLbl.AutoSize = true;
+					instance.progressLbl.Font = new Font("Comic Sans MS", 12, FontStyle.Regular, GraphicsUnit.Point);
+					instance.progressLbl.Text = "Click the 'Join' button on any game to join the action!";
+					instance.progressLbl.Location = new Point((instance.ClientSize.Width - instance.progressLbl.Width) / 2, instance.progressBar.Location.Y);
+					instance.progressLbl.Visible = true;
 
 					instance.progressBar.Visible = false;
 

@@ -36,7 +36,7 @@ namespace NovaLauncher
 			this.actionBtn = new System.Windows.Forms.Button();
 			this.appIcon = new System.Windows.Forms.PictureBox();
 			this.progressBar = new System.Windows.Forms.ProgressBar();
-			this.progressDebugLbl = new System.Windows.Forms.Label();
+			this.progressLbl = new System.Windows.Forms.Label();
 			this.devWarningLbl = new System.Windows.Forms.Label();
 			((System.ComponentModel.ISupportInitialize)(this.appIcon)).BeginInit();
 			this.SuspendLayout();
@@ -105,19 +105,19 @@ namespace NovaLauncher
 			this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
 			this.progressBar.TabIndex = 1;
 			// 
-			// progressDebugLbl
+			// progressLbl
 			// 
-			this.progressDebugLbl.AutoEllipsis = true;
-			this.progressDebugLbl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-			this.progressDebugLbl.Font = new System.Drawing.Font("Microsoft YaHei", 6F);
-			this.progressDebugLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
-			this.progressDebugLbl.Location = new System.Drawing.Point(12, 243);
-			this.progressDebugLbl.Name = "progressDebugLbl";
-			this.progressDebugLbl.Size = new System.Drawing.Size(473, 11);
-			this.progressDebugLbl.TabIndex = 5;
-			this.progressDebugLbl.Text = "0% (0.00 KB/0.00 KB | 0.00 KB/s)  |  ETA: 00:00:00";
-			this.progressDebugLbl.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-			this.progressDebugLbl.Visible = false;
+			this.progressLbl.AutoEllipsis = true;
+			this.progressLbl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+			this.progressLbl.Font = new System.Drawing.Font("Microsoft YaHei", 6F);
+			this.progressLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
+			this.progressLbl.Location = new System.Drawing.Point(12, 243);
+			this.progressLbl.Name = "progressLbl";
+			this.progressLbl.Size = new System.Drawing.Size(473, 11);
+			this.progressLbl.TabIndex = 5;
+			this.progressLbl.Text = "0% (0.00 KB/0.00 KB | 0.00 KB/s)  |  ETA: 00:00:00";
+			this.progressLbl.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			this.progressLbl.Visible = false;
 			// 
 			// devWarningLbl
 			// 
@@ -140,7 +140,7 @@ namespace NovaLauncher
 			this.ClientSize = new System.Drawing.Size(498, 326);
 			this.ControlBox = false;
 			this.Controls.Add(this.devWarningLbl);
-			this.Controls.Add(this.progressDebugLbl);
+			this.Controls.Add(this.progressLbl);
 			this.Controls.Add(this.actionBtn);
 			this.Controls.Add(this.appIcon);
 			this.Controls.Add(this.statusLbl);
@@ -167,6 +167,6 @@ namespace NovaLauncher
 		internal System.Windows.Forms.Label statusLbl;
 		internal System.Windows.Forms.Button actionBtn;
 		internal System.Windows.Forms.ProgressBar progressBar;
-		internal System.Windows.Forms.Label progressDebugLbl;
+		internal System.Windows.Forms.Label progressLbl;
 	}
 }
