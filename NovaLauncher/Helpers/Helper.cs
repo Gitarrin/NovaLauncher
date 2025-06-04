@@ -282,7 +282,7 @@ namespace NovaLauncher.Helpers
 						: Assembly.GetExecutingAssembly().GetName().Version.ToString();
 				};
 
-				string versionJson = File.ReadAllText($"{Config.BaseInstallPath}\\{client}\\version.json");
+				string versionJson = File.ReadAllText($"{Config.BaseInstallPath}\\clients\\{client}\\version.json");
 				VersionJSON version = JsonConvert.DeserializeObject<VersionJSON>(versionJson);
 				return version.Version;
 			}
@@ -323,11 +323,10 @@ namespace NovaLauncher.Helpers
 			if (info.DoSHACheck)
 			{
 				string checksum = CreateChecksum(info.DownloadedPath);
-					if (checksum != info.Sha256)
-					{
-						Console.Error.WriteLine($"ERROR: Downloaded file SHA256 Checksum does not match. Expected: {info.Sha256} Got: {checksum}");
-						return 2;
-					}
+				if (checksum != info.Sha256)
+				{
+					Console.Error.WriteLine($"ERROR: Downloaded file SHA256 Checksum does not match. Expected: {info.Sha256} Got: {checksum}");
+					return 2;
 				}
 			}
 

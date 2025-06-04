@@ -426,7 +426,7 @@ namespace NovaLauncher.Helpers
 							string serverClientVersion = kvp.Key;
 							LauncherClient serverClient = kvp.Value;
 
-							string installPath = Config.BaseInstallPath + @"\" + serverClientVersion;
+							string installPath = Config.BaseInstallPath + @"\clients\" + serverClientVersion;
 							if (serverClient.Status == LauncherClientStatus.REMOVED && Directory.Exists(installPath))
 							{
 								Program.logger.Log($"clientCheck: {serverClient.Name} marked as REMOVED, purging...");
@@ -446,7 +446,7 @@ namespace NovaLauncher.Helpers
 						gameClient = new GameClient
 						{
 							Name = client.Name,
-							InstallPath = $@"{Config.BaseInstallPath}\{launchData.Version}",
+							InstallPath = $@"{Config.BaseInstallPath}\clients\{launchData.Version}",
 							Executable = client.Executables.Player,
 							StudioExecutable = client.Executables.Studio,
 							HostExecutable = client.Executables.Host,
