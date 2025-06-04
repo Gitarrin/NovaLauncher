@@ -910,9 +910,9 @@ namespace NovaLauncher.Helpers
 										// Because we're about to replace the current EXE, we need to restart the launcher.
 										updateInfo.IsUpgrade = false; // We already did this step.
 										string[] reUpInfo = {
-												Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
-												Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
-											};
+											Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
+											Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
+										};
 										string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
 
 										string toPath = App.IsRunningFromInstall()
@@ -921,10 +921,10 @@ namespace NovaLauncher.Helpers
 
 										string[] cmds =
 										{
-												$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
+											$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
 											$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{toPath}\"",
 											$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
-											};
+										};
 										Process.Start(new ProcessStartInfo
 										{
 											FileName = "cmd.exe",
