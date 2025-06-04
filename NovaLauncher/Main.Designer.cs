@@ -162,11 +162,11 @@ namespace NovaLauncher
 
 		#endregion
 		private System.Windows.Forms.Label verLbl;
-		private System.Windows.Forms.PictureBox appIcon;
 		private System.Windows.Forms.Label devWarningLbl;
 		internal System.Windows.Forms.Label statusLbl;
 		internal System.Windows.Forms.Button actionBtn;
 		internal System.Windows.Forms.ProgressBar progressBar;
 		internal System.Windows.Forms.Label progressLbl;
+		internal System.Windows.Forms.PictureBox appIcon;
 	}
 }

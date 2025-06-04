@@ -217,7 +217,13 @@ namespace NovaLauncher.Helpers
 										DoThingsWInvoke(new Action(() => {
 											instance.progressBar.Visible = false;
 											instance.progressLbl.Visible = false;
+
+											int sH = instance.statusLbl.Height;
+											foreach (string line in alert.Message.Split('\n'))
+												instance.statusLbl.Height += sH;
 											UpdateTextWithLog(instance.statusLbl, alert.Message);
+											instance.statusLbl.Location = new Point(instance.statusLbl.Location.X, instance.appIcon.Bottom + (instance.actionBtn.Top - instance.appIcon.Bottom - instance.statusLbl.Height) / 2);
+
 											instance.actionBtn.Text = "Close";
 											instance.actionBtn.Enabled = true;
 											instance.actionBtn.Visible = true;
@@ -910,9 +916,9 @@ namespace NovaLauncher.Helpers
 										// Because we're about to replace the current EXE, we need to restart the launcher.
 										updateInfo.IsUpgrade = false; // We already did this step.
 										string[] reUpInfo = {
-											Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
-											Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
-										};
+										Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
+										Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
+									};
 										string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
 
 										string toPath = App.IsRunningFromInstall()
@@ -921,10 +927,10 @@ namespace NovaLauncher.Helpers
 
 										string[] cmds =
 										{
-											$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
-											$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{toPath}\"",
-											$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
-										};
+										$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
+										$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{toPath}\"",
+										$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
+									};
 										Process.Start(new ProcessStartInfo
 										{
 											FileName = "cmd.exe",
@@ -942,24 +948,21 @@ namespace NovaLauncher.Helpers
 								if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 							};
 
-							DoThingsWInvoke(new Action(() =>
-							{
-								if (Config.Debug) instance.progressLbl.Visible = true;
-								ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
-									delegate (string file, string sizeData)
-									{
-										// parts[0] = currentFile
-										// parts[1] = totalFiles
-										// parts[2] = compressedSize
-										// parts[3] = uncompressedSize
-										string[] parts = sizeData.Split('|');
-
-										UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
-									}
-								);
-
-								if (Config.Debug) instance.progressLbl.Visible = false;
-							}));
+							instance.progressLbl.Visible = true;
+							ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
+								delegate (string file, string sizeData)
+								{
+									// parts[0] = currentFile
+									// parts[1] = totalFiles
+									// parts[2] = compressedSize
+									// parts[3] = uncompressedSize
+									string[] parts = sizeData.Split('|');
+									DoThingsWInvoke(new Action(() =>
+										instance.progressLbl.Text = $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})"
+									));
+								}
+							);
+							instance.progressLbl.Visible = false;
 
 							if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 						}
