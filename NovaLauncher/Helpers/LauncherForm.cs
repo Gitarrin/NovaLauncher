@@ -86,7 +86,7 @@ namespace NovaLauncher.Helpers
 				Close();
 			}
 
-#if NET35
+			#if NET35
 			private bool SwitchToNewNET() {
 				try
 				{
@@ -99,7 +99,7 @@ namespace NovaLauncher.Helpers
 				catch { }
 				return false;
 			}
-#endif
+			#endif
 
 			#region Launcher
 
@@ -295,6 +295,8 @@ namespace NovaLauncher.Helpers
 				);
 				return;
 			}
+
+			#region Migration - TO BE REMOVED IN 1.3.2.3 RELEASE.
 			private bool CheckMigrate()
 			{
 				// We are no longer using "Novarizz"
@@ -371,7 +373,8 @@ namespace NovaLauncher.Helpers
 					}
 				);
 			}
-#endregion
+			#endregion
+			#endregion
 
 			#region Client
 			private void PerformClientCheck()
@@ -488,7 +491,7 @@ namespace NovaLauncher.Helpers
 							gameClient.Version = null;
 						}
 
-						LatestClientInfo latestClientInfo = client.Status == LauncherClientStatus.PAUSED ? null : Helpers.Web.GetLatestServerVersionInfo<LatestClientInfo>(client.Info);
+						LatestClientInfo latestClientInfo = client.Status == LauncherClientStatus.PAUSED ? null : Web.GetLatestServerVersionInfo<LatestClientInfo>(client.Info);
 
 						if (latestClientInfo == null)
 						{
@@ -1018,14 +1021,14 @@ namespace NovaLauncher.Helpers
 							if (updateInfo.IsLauncher)
 							{
 								LauncherUpgraded = true;
-#if NET35
-							if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
-							{
-								Program.cliArgs.UpdateInfo = null;
-								PerformLauncherCheck();
-								return;
-							}
-#endif
+								#if NET35
+								if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
+								{
+									Program.cliArgs.UpdateInfo = null;
+									PerformLauncherCheck();
+									return;
+								}
+								#endif
 								if (CheckMigrate()) MigrateInstall();
 								else PerformClientCheck();
 							}
@@ -1039,7 +1042,7 @@ namespace NovaLauncher.Helpers
 
 
 		}
-#endregion
+		#endregion
 
 		#region Install Completed
 		internal class InstallCompleted
@@ -1186,41 +1189,41 @@ namespace NovaLauncher.Helpers
 				string batchFilePath = Path.Combine(Path.GetTempPath(), Config.AppName.Replace(" ", "") + "Uninstaller.bat");
 
 				string cmdCommand = $@"
-@echo off
-setlocal
-set max_retries=10
-set retry_count=0
-ping -n 1 127.0.0.1 >nul
+					@echo off
+					setlocal
+					set max_retries=10
+					set retry_count=0
+					ping -n 1 127.0.0.1 >nul
 
-:delete_exe
-del /f /q ""{exePath}"" 2>nul
-if %errorlevel% neq 0 (
-	set /a retry_count+=1
-	if %retry_count% geq %max_retries% (
-		echo Failed to delete NovaLauncher.exe after %max_retries% retries.
-		exit /b 1
-	)
-	ping -n 2 127.0.0.1 >nul
-	goto delete_exe
-)
+					:delete_exe
+					del /f /q ""{exePath}"" 2>nul
+					if %errorlevel% neq 0 (
+						set /a retry_count+=1
+						if %retry_count% geq %max_retries% (
+							echo Failed to delete NovaLauncher.exe after %max_retries% retries.
+							exit /b 1
+						)
+						ping -n 2 127.0.0.1 >nul
+						goto delete_exe
+					)
 
-:delete_directory
-rmdir /s /q ""{installPath}"" 2>nul
-if %errorlevel% neq 0 (
-	echo Failed to delete the installation directory.
-	exit /b 1
-)
+					:delete_directory
+					rmdir /s /q ""{installPath}"" 2>nul
+					if %errorlevel% neq 0 (
+						echo Failed to delete the installation directory.
+						exit /b 1
+					)
 
-:delete_uninstaller
-del /f /q ""{batchFilePath}"" 2>nul
-if %errorlevel% neq 0 (
-	echo Failed to delete the uninstaller batch file.
-	exit /b 1
-)
+					:delete_uninstaller
+					del /f /q ""{batchFilePath}"" 2>nul
+					if %errorlevel% neq 0 (
+						echo Failed to delete the uninstaller batch file.
+						exit /b 1
+					)
 
-echo Uninstallation completed successfully.
-exit /b 0
-";
+					echo Uninstallation completed successfully.
+					exit /b 0
+				";
 
 				// Write the batch file to disk
 				try
