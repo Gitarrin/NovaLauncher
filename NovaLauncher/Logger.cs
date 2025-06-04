@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,17 +18,25 @@ namespace NovaLauncher
 		static Timer flushTimer;
 		static string lastItem = "";
 
-		static string startingDir;
+		static string logDir;
+		static string logFile;
 		static long startTime;
 
 		public Logger()
 		{
 			startTime = DateTime.Now.Ticks;
 
-			if (Helpers.App.IsWindows()) startingDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-			else startingDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			if (Helpers.App.IsWindows()) logDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+			else logDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-			flushTimer = new Timer(FlushLogs, null, TimeSpan.Zero, TimeSpan.FromSeconds(0.727));
+			logFile = $"debug_{startTime}.log";
+			if (Helpers.App.IsRunningFromInstall())
+			{
+				if (!Directory.Exists($@"{logDir}\logs")) Directory.CreateDirectory($@"{logDir}\logs");
+				logDir = $@"{logDir}\logs";
+			} else logFile = $"{Config.AppName.Replace(" ", "")}-{logFile}";
+
+			flushTimer = new Timer(FlushLogs, null, TimeSpan.Zero, TimeSpan.FromSeconds(0.39));
 
 			useConsole = Config.Debug; // Use Console Logging
 			useFile = Config.Debug; // Use File Logging
@@ -64,7 +73,7 @@ namespace NovaLauncher
 
 				if (logsToWrite.Count > 0)
 				{
-					using (StreamWriter writer = new StreamWriter(Path.Combine(startingDir, $"debug_{startTime}.log"), true))
+					using (StreamWriter writer = new StreamWriter(Path.Combine(logDir, logFile), true))
 					{
 						foreach (string lM in logsToWrite)
 						{

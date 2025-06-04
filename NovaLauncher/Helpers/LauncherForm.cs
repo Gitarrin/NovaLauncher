@@ -4,7 +4,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -28,7 +30,7 @@ namespace NovaLauncher.Helpers
 			uninstaller = new Uninstaller();
 		}
 
-		internal static void Close() => DoThingsWInvoke(new Action(() => instance?.Close()));
+		internal static void Close() => Application.Exit();
 
 		internal static void CreateBackgroundTask(DoWorkEventHandler doWorkHandler, RunWorkerCompletedEventHandler finishWorkHandler)
 		{
@@ -40,11 +42,13 @@ namespace NovaLauncher.Helpers
 
 		internal static void UpdateTextWithLog(Control c, string text)
 		{
-			DoThingsWInvoke(() =>
+			Action f = new Action(() =>
 			{
 				c.Text = text;
 				Program.logger.Log($"{c.Name}: {text}");
 			});
+			if (c.InvokeRequired) c.Invoke(f); else f();
+
 		}
 
 		internal static void DoThingsWInvoke(Action f)
@@ -166,7 +170,16 @@ namespace NovaLauncher.Helpers
 #endif
 
 						// Now, check the Launcher version.
-						ev.Result = Web.GetLatestServerVersionInfo<LatestLauncherInfo>($"{Config.SelectedServer}{Config.LauncherSetup}?f={netFX}");
+
+						ev.Result = Web.GetLatestServerVersionInfo<LatestLauncherInfo>(
+							string.Join("", new string[] {
+							Config.SelectedServer,
+							Config.LauncherSetup,
+							$"?f={netFX}",
+#if DEBUG
+							$"&r={new Random().Next()}"
+#endif
+						}));
 					},
 					(s, ev) =>
 					{
@@ -352,7 +365,7 @@ namespace NovaLauncher.Helpers
 					}
 				);
 			}
-			#endregion
+#endregion
 
 			#region Client
 			private void PerformClientCheck()
@@ -870,6 +883,7 @@ namespace NovaLauncher.Helpers
 				CreateBackgroundTask(
 					(s, e) =>
 					{
+						Thread.Sleep(500);
 						try
 						{
 							if (updateInfo.IsLauncher)
@@ -899,12 +913,17 @@ namespace NovaLauncher.Helpers
 												Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
 												Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
 											};
-										string[] args = Environment.GetCommandLineArgs();
+										string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+
+										string toPath = App.IsRunningFromInstall()
+											? (App.IsWindows() ? Process.GetCurrentProcess().MainModule.FileName : Assembly.GetExecutingAssembly().Location)
+											: $@"{updateInfo.InstallPath}\{Config.AppEXE}";
+
 										string[] cmds =
 										{
 												$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
-												$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{updateInfo.InstallPath}\\{Config.AppEXE}\"",
-												$"{string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
+											$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{toPath}\"",
+											$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
 											};
 										Process.Start(new ProcessStartInfo
 										{
@@ -917,25 +936,30 @@ namespace NovaLauncher.Helpers
 										return;
 									};
 								};
-							} else
+							}
+							else
 							{
 								if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 							};
 
-							if (Config.Debug) instance.progressLbl.Visible = true;
-							ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
-								delegate (string file, string sizeData)
-								{
-									// parts[0] = currentFile
-									// parts[1] = totalFiles
-									// parts[2] = compressedSize
-									// parts[3] = uncompressedSize
-									string[] parts = sizeData.Split('|');
+							DoThingsWInvoke(new Action(() =>
+							{
+								if (Config.Debug) instance.progressLbl.Visible = true;
+								ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
+									delegate (string file, string sizeData)
+									{
+										// parts[0] = currentFile
+										// parts[1] = totalFiles
+										// parts[2] = compressedSize
+										// parts[3] = uncompressedSize
+										string[] parts = sizeData.Split('|');
 
-									UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
-								}
-							);
-							if (Config.Debug) instance.progressLbl.Visible = false;
+										UpdateTextWithLog(instance.progressLbl, $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})");
+									}
+								);
+
+								if (Config.Debug) instance.progressLbl.Visible = false;
+							}));
 
 							if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 						}
@@ -1012,7 +1036,7 @@ namespace NovaLauncher.Helpers
 
 
 		}
-		#endregion
+#endregion
 
 		#region Install Completed
 		internal class InstallCompleted

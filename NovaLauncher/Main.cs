@@ -29,18 +29,7 @@ namespace NovaLauncher
 #if DEBUG
 			devWarningLbl.Visible = true;
 #endif
-			PerformLauncherStartup();
 
-			//if (Program.cliArgs.Uninstall)
-			//{
-			//	LoadScreen(new Uninstaller());
-			//	return;
-			//}
-			//LoadScreen(new Installer());
-		}
-
-		private void PerformLauncherStartup()
-		{
 			LauncherForm.CreateBackgroundTask(
 				(s, e) =>
 				{
@@ -52,20 +41,11 @@ namespace NovaLauncher
 				},
 				(s, e) => { }
 			);
-
 		}
 
 		private void CancelButton_Click(object sender, EventArgs e)
 		{
 			Close();
 		}
-
-		//public static void LoadScreen(UserControl screen)
-		//{
-		//	Program.logger.Log($"Screen switch: {(panelContainer.Controls.Count > 0 ? ((panelContainer.Controls[0] as UserControl).Name + " -> " + screen.Name) : screen.Name)}");
-		//	panelContainer.Controls.Clear();
-		//	screen.Dock = DockStyle.Fill;
-		//	panelContainer.Controls.Add(screen);
-		//}
 	}
 }

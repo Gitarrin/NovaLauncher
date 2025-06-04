@@ -149,7 +149,10 @@ namespace NovaLauncher.Helpers
 						currentFile++;
 						onBeginUncompression?.Invoke(entry.Name, $"{currentFile}|{totalFiles}|{entry.CompressedSize}|{entry.Size}");
 
-						using (FileStream fileStream = File.Create(filePath))
+						string filePathTmp = $"{filePath}.tmp";
+						if (File.Exists(filePathTmp)) File.Delete(filePathTmp);
+
+						using (FileStream fileStream = File.Create(filePathTmp))
 						{
 							byte[] buffer = new byte[2048];
 							int size;
@@ -159,6 +162,12 @@ namespace NovaLauncher.Helpers
 								fileStream.Write(buffer, 0, size);
 							}
 						}
+
+						if (File.Exists(filePath))
+						{
+							if (App.CreateChecksum(filePath) != App.CreateChecksum(filePathTmp)) File.Move(filePathTmp, filePath);
+							else File.Delete(filePathTmp);
+						} else File.Move(filePathTmp, filePath);
 					}
 				}
 				zipStream.Close();
@@ -313,12 +322,7 @@ namespace NovaLauncher.Helpers
 			// Second, let's check the hash.
 			if (info.DoSHACheck)
 			{
-				SHA256 sha256 = SHA256.Create();
-				byte[] checksumB;
-				using (FileStream stream = File.OpenRead(info.DownloadedPath))
-				{
-					checksumB = sha256.ComputeHash(stream);
-					string checksum = BitConverter.ToString(checksumB).Replace("-", "").ToLower();
+				string checksum = CreateChecksum(info.DownloadedPath);
 					if (checksum != info.Sha256)
 					{
 						Console.Error.WriteLine($"ERROR: Downloaded file SHA256 Checksum does not match. Expected: {info.Sha256} Got: {checksum}");
@@ -329,6 +333,22 @@ namespace NovaLauncher.Helpers
 
 			// Lookin' good.
 			return 0;
+		}
+
+		public static string CreateChecksum(string filePath)
+		{
+			string checksum = null;
+			
+			SHA256 sha256 = SHA256.Create();
+			byte[] checksumB;
+
+			using (FileStream stream = File.OpenRead(filePath))
+			{
+				checksumB = sha256.ComputeHash(stream);
+				checksum = BitConverter.ToString(checksumB).Replace("-", "").ToLower();
+			}
+
+			return checksum;
 		}
 
 		public static void PurgeFilesAndFolders(string location, string[] exclude = null)
