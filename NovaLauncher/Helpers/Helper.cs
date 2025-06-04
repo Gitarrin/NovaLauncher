@@ -240,7 +240,7 @@ namespace NovaLauncher.Helpers
 
 		public static bool IsOlderWindows()
 		{
-			if (IsWindows()) return false;
+			if (!IsWindows()) return false;
 
 			// Checking for Windows 7 and earlier
 			Version osVersion = Environment.OSVersion.Version;
