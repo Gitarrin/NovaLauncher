@@ -435,7 +435,17 @@ namespace NovaLauncher.Helpers
 							string serverClientVersion = kvp.Key;
 							LauncherClient serverClient = kvp.Value;
 
-							string installPath = Config.BaseInstallPath + @"\clients\" + serverClientVersion;
+							string legacyInstallPath = $@"{Config.BaseInstallPath}\{serverClientVersion}";
+							string installPath = $@"{Config.BaseInstallPath}\clients\{serverClientVersion}";
+							if (Directory.Exists(legacyInstallPath))
+							{
+								if (!Directory.Exists($@"{Config.BaseInstallPath}\clients")) Directory.CreateDirectory($@"{Config.BaseInstallPath}\clients");
+								if (Directory.Exists(installPath)) Directory.Delete(installPath);
+
+								Program.logger.Log($"clientCheck: {serverClient.Name} found outside clients folder, moving...");
+								try { Directory.Move(legacyInstallPath, installPath); } catch { };
+							};
+
 							if (serverClient.Status == LauncherClientStatus.REMOVED && Directory.Exists(installPath))
 							{
 								Program.logger.Log($"clientCheck: {serverClient.Name} marked as REMOVED, purging...");
