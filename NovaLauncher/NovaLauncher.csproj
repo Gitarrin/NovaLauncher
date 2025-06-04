@@ -169,31 +169,14 @@
 		<Compile Include="Helpers\Helper.cs" />
 		<Compile Include="Config.cs" />
 		<Compile Include="Errors.cs" />
+		<Compile Include="Helpers\LauncherForm.cs" />
 		<Compile Include="Logger.cs" />
-		<Compile Include="Screens\InstallCompleted.cs" />
-		<Compile Include="Screens\InstallCompleted.Designer.cs">
-			<DependentUpon>InstallCompleted.cs</DependentUpon>
-		</Compile>
 		<Compile Include="Main.cs" />
 		<Compile Include="Main.Designer.cs">
 			<DependentUpon>Main.cs</DependentUpon>
 		</Compile>
-		<Compile Include="Screens\Installer.cs" />
-		<Compile Include="Screens\Installer.Designer.cs">
-			<DependentUpon>Installer.cs</DependentUpon>
-		</Compile>
 		<Compile Include="Program.cs" />
 		<Compile Include="Properties\AssemblyInfo.cs" />
-		<Compile Include="Screens\Uninstaller.cs" />
-		<Compile Include="Screens\Uninstaller.Designer.cs">
-			<DependentUpon>Uninstaller.cs</DependentUpon>
-		</Compile>
-		<EmbeddedResource Include="Screens\InstallCompleted.resx">
-			<DependentUpon>InstallCompleted.cs</DependentUpon>
-		</EmbeddedResource>
-		<EmbeddedResource Include="Screens\Installer.resx">
-			<DependentUpon>Installer.cs</DependentUpon>
-		</EmbeddedResource>
 		<EmbeddedResource Include="Main.resx">
 			<DependentUpon>Main.cs</DependentUpon>
 		</EmbeddedResource>
@@ -207,9 +190,6 @@
 			<DependentUpon>Resources.resx</DependentUpon>
 			<DesignTime>True</DesignTime>
 		</Compile>
-		<EmbeddedResource Include="Screens\Uninstaller.resx">
-			<DependentUpon>Uninstaller.cs</DependentUpon>
-		</EmbeddedResource>
 		<None Include="app.config" />
 		<None Include="packages.config" />
 		<None Include="Properties\Settings.settings">

@@ -1,47 +1,72 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.Threading;
+using System.Windows.Forms;
+using NovaLauncher.Helpers;
 
 namespace NovaLauncher
 {
 	public partial class Main : Form
 	{
-		private static Panel panelContainer;
-
+		internal LauncherForm currentInstance;
 		public Main()
 		{
 			InitializeComponent();
 
-			panelContainer = new Panel
-			{
-				Dock = DockStyle.Fill
-			};
-			this.Controls.Add(panelContainer);
-			verLbl.Visible = false;
-			this.Text = Config.AppName;
+#if NET48
+			DoubleBuffered = true;
+			SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+#endif
 
-			this.WindowState = FormWindowState.Minimized;
-			this.Show();
-			this.WindowState = FormWindowState.Normal;
-			this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+			Text = Config.AppName;
+			WindowState = FormWindowState.Minimized;
+			Show();
+			WindowState = FormWindowState.Normal;
 
-			if (!Config.Debug && Control.ModifierKeys == Keys.Shift) Config.Debug = true;
-			if (Config.Debug) verLbl.Visible = true;
+			// Check for Debug
+			if (!Config.Debug && ModifierKeys == Keys.Shift) Config.Debug = true;
+			verLbl.Text = $"NovaLauncher {App.GetInstalledVersion()}{(Config.Debug ? " - Running in debug" : "")}";
 
-			verLbl.Text = $"NovaLauncher {Helpers.App.GetInstalledVersion()}  - Running {(Config.Debug ? "in debug" : "normal")}.";
+#if DEBUG
+			devWarningLbl.Visible = true;
+#endif
+			PerformLauncherStartup();
 
-			if (Program.cliArgs.Uninstall)
-			{
-				LoadScreen(new Uninstaller());
-				return;
-			}
-			LoadScreen(new Installer());
+			//if (Program.cliArgs.Uninstall)
+			//{
+			//	LoadScreen(new Uninstaller());
+			//	return;
+			//}
+			//LoadScreen(new Installer());
 		}
 
-		public static void LoadScreen(UserControl screen)
+		private void PerformLauncherStartup()
 		{
-			Program.logger.Log($"Screen switch: {(panelContainer.Controls.Count > 0 ? ((panelContainer.Controls[0] as UserControl).Name + " -> " + screen.Name) : screen.Name)}");
-			panelContainer.Controls.Clear();
-			screen.Dock = DockStyle.Fill;
-			panelContainer.Controls.Add(screen);
+			LauncherForm.CreateBackgroundTask(
+				(s, e) =>
+				{
+					currentInstance = new LauncherForm(this);
+					Thread.Sleep(500);
+				},
+				(s, e) =>
+				{
+					if (Program.cliArgs.Uninstall) currentInstance.uninstaller.Init();
+					else currentInstance.installer.Init();
+				}
+			);
+
 		}
+
+		private void CancelButton_Click(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		//public static void LoadScreen(UserControl screen)
+		//{
+		//	Program.logger.Log($"Screen switch: {(panelContainer.Controls.Count > 0 ? ((panelContainer.Controls[0] as UserControl).Name + " -> " + screen.Name) : screen.Name)}");
+		//	panelContainer.Controls.Clear();
+		//	screen.Dock = DockStyle.Fill;
+		//	panelContainer.Controls.Add(screen);
+		//}
 	}
 }
