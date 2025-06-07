@@ -33,13 +33,14 @@ namespace NovaLauncher
 			LauncherForm.CreateBackgroundTask(
 				(s, e) =>
 				{
-					currentInstance = new LauncherForm(this);
 					Thread.Sleep(500);
+				},
+				(s, e) => {
+					currentInstance = new LauncherForm(this);
 
 					if (Program.cliArgs.Uninstall) currentInstance.uninstaller.Init();
 					else currentInstance.installer.Init();
-				},
-				(s, e) => { }
+				}
 			);
 		}
 

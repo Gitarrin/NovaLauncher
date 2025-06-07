@@ -32,28 +32,28 @@ namespace NovaLauncher.Helpers
 
 		internal static void Close() => Application.Exit();
 
+		internal static void DoThingsWInvoke(Action f, Control c = null)
+		{
+			if (c != null && c.InvokeRequired) c.Invoke(f);
+			else if (instance != null && instance.InvokeRequired) instance.Invoke(f);
+			else f();
+		}
+
 		internal static void CreateBackgroundTask(DoWorkEventHandler doWorkHandler, RunWorkerCompletedEventHandler finishWorkHandler)
 		{
 			BackgroundWorker bgWorker = new BackgroundWorker();
-			bgWorker.DoWork += doWorkHandler;
-			bgWorker.RunWorkerCompleted += finishWorkHandler;
+			bgWorker.DoWork += (s, e) => doWorkHandler(s, e);
+			bgWorker.RunWorkerCompleted += (s, e) => DoThingsWInvoke(() => finishWorkHandler(s, e));
 			bgWorker.RunWorkerAsync();
 		}
 
 		internal static void UpdateTextWithLog(Control c, string text)
 		{
-			Action f = new Action(() =>
+			DoThingsWInvoke(() =>
 			{
 				c.Text = text;
 				Program.logger.Log($"{c.Name}: {text}");
-			});
-			if (c.InvokeRequired) c.Invoke(f); else f();
-
-		}
-
-		internal static void DoThingsWInvoke(Action f)
-		{
-			if (instance.InvokeRequired) instance.Invoke(f); else f();
+			}, c);
 		}
 
 		#region Installer
@@ -79,8 +79,10 @@ namespace NovaLauncher.Helpers
 			private void Cancel(string tempPath)
 			{
 				UpdateTextWithLog(instance.statusLbl, "Cancelling...");
-				instance.progressBar.Style = ProgressBarStyle.Marquee;
-				instance.actionBtn.Enabled = false;
+				DoThingsWInvoke(() => {
+					instance.progressBar.Style = ProgressBarStyle.Marquee;
+					instance.actionBtn.Enabled = false;
+				});
 				webClient.Dispose();
 				File.Delete(tempPath);
 				Close();
@@ -214,21 +216,19 @@ namespace NovaLauncher.Helpers
 									}
 									else
 									{
-										DoThingsWInvoke(new Action(() => {
-											instance.progressBar.Visible = false;
-											instance.progressLbl.Visible = false;
+										instance.progressBar.Visible = false;
+										instance.progressLbl.Visible = false;
 
-											int sH = instance.statusLbl.Height;
-											foreach (string line in alert.Message.Split('\n'))
-												instance.statusLbl.Height += sH;
-											UpdateTextWithLog(instance.statusLbl, alert.Message);
-											instance.statusLbl.Location = new Point(instance.statusLbl.Location.X, instance.appIcon.Bottom + (instance.actionBtn.Top - instance.appIcon.Bottom - instance.statusLbl.Height) / 2);
+										int sH = instance.statusLbl.Height;
+										foreach (string line in alert.Message.Split('\n'))
+											instance.statusLbl.Height += sH;
+										UpdateTextWithLog(instance.statusLbl, alert.Message);
+										instance.statusLbl.Location = new Point(instance.statusLbl.Location.X, instance.appIcon.Bottom + (instance.actionBtn.Top - instance.appIcon.Bottom - instance.statusLbl.Height) / 2);
 
-											instance.actionBtn.Text = "Close";
-											instance.actionBtn.Enabled = true;
-											instance.actionBtn.Visible = true;
-											instance.actionBtn.Click += (se, e) => Close();
-										}));
+										instance.actionBtn.Text = "Close";
+										instance.actionBtn.Enabled = true;
+										instance.actionBtn.Visible = true;
+										instance.actionBtn.Click += (se, e) => Close();
 										return;
 									}
 								}
@@ -587,7 +587,7 @@ namespace NovaLauncher.Helpers
 							};
 
 							process.Start();
-							instance.Invoke(new Action(() => { instance.progressBar.Value = 50; }));
+							instance.progressBar.Value = 50;
 						}
 						else if (launchData.LaunchType == "studio" || launchData.LaunchType == "build")
 						{
@@ -603,7 +603,7 @@ namespace NovaLauncher.Helpers
 							};
 
 							process.Start();
-							instance.Invoke(new Action(() => { instance.progressBar.Value = 50; }));
+							instance.progressBar.Value = 50;
 						}
 						else
 						{
@@ -621,7 +621,7 @@ namespace NovaLauncher.Helpers
 							};
 
 							process.Start();
-							instance.Invoke(new Action(() => { instance.progressBar.Value = 50; }));
+							instance.progressBar.Value = 50;
 
 							int waited = 0;
 							int stop_waiting = 60000;
@@ -684,7 +684,7 @@ namespace NovaLauncher.Helpers
 					},
 					(s, e) =>
 					{
-						instance.Invoke(new Action(() => { instance.progressBar.Value = 100; }));
+						instance.progressBar.Value = 100;
 						Close();
 						return;
 					}
@@ -699,28 +699,32 @@ namespace NovaLauncher.Helpers
 				CreateBackgroundTask(
 					(s, e) =>
 					{
-						Thread.Sleep(150);
-						DoThingsWInvoke(new Action(() =>
+					Thread.Sleep(150);
+
+					if (!updateInfo.IsLauncher)
+					{
+						UpdateTextWithLog(instance.statusLbl, $"Waiting for Roblox process(es) to close...");
+						if (!App.KillAllBlox())
 						{
-							if (!updateInfo.IsLauncher)
-							{
-								UpdateTextWithLog(instance.statusLbl, $"Waiting for Roblox process(es) to close...");
-								if (!App.KillAllBlox())
-								{
-									Close();
-								}
-							}
+							Close();
+						}
+					}
 
-							UpdateTextWithLog(instance.statusLbl, $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
-							instance.progressBar.Style = ProgressBarStyle.Continuous;
-							instance.actionBtn.Enabled = true;
+					UpdateTextWithLog(instance.statusLbl, $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
+					DoThingsWInvoke(() =>
+					{
+						instance.progressBar.Style = ProgressBarStyle.Continuous;
+						instance.actionBtn.Enabled = true;
+					});
 
-							webClient = new WebClient();
-							webClient.Headers.Add("user-agent", Web.GetUserAgent());
-							updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
+					webClient = new WebClient();
+					webClient.Headers.Add("user-agent", Web.GetUserAgent());
+					updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
 
-							Stopwatch downWatch = new Stopwatch();
-							webClient.DownloadProgressChanged += (ws, we) =>
+					Stopwatch downWatch = new Stopwatch();
+					webClient.DownloadProgressChanged += (ws, we) =>
+					{
+						DoThingsWInvoke(() =>
 							{
 								instance.progressLbl.Visible = true;
 
@@ -741,75 +745,75 @@ namespace NovaLauncher.Helpers
 									? $"{progress}% ({Web.FormatBytes(bytesRecv)}/{Web.FormatBytes(bytesTotal)} | {Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}"
 									: $"{progress}% ({Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
 								instance.progressBar.Value = progress;
-							};
-							webClient.DownloadFileCompleted += (ws, we) =>
-							{
-								instance.progressLbl.Visible = false;
+							});
+						};
+						webClient.DownloadFileCompleted += (ws, we) =>
+						{
+							DoThingsWInvoke(() => instance.progressLbl.Visible = false);
 
-								if (we.Cancelled)
-								{
-									Cancel(updateInfo.DownloadedPath);
-									return;
-								}
-								if (we.Error != null)
-								{
-									Program.logger.Log($"update: Failed to download: {we.Error.Message}\n{we.Error.StackTrace}");
-									MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
-									Cancel(updateInfo.DownloadedPath);
-									return;
-								}
-
-								CreateBackgroundTask(
-									(se, ev) =>
-									{
-										int checkCode = App.IsDownloadOK(updateInfo);
-										if (checkCode > 0)
-										{
-											MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
-											Cancel(updateInfo.DownloadedPath);
-											return;
-										}
-									},
-									(se, ev) =>
-									{
-										if (updateInfo.IsLauncher)
-										{
-											if (!updateInfo.IsUpgrade && App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
-											{
-												Program.logger.Log($"update: Wine message triggered");
-												string[] wineMessage = new string[]
-												{
-													"We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.",
-													"",
-													"To get Novarin working via Wine, here's what you need to do:",
-													$" 1. Create a .desktop file that handles the protocol '{Config.AppProtocol}://token123', which calls {Config.AppEXE} (found in Appdata/Local/{Config.AppShortName}) like '{Config.AppEXE.Replace(".exe", "")} --token token123' with token123 being whatever is passed thru to the protocol.",
-													" 2. Install DVXK thru something like winetricks.",
-													"",
-													"If you do those two things correctly, you should be able to play Novarin.",
-													"",
-													"P.S. If your scripting this, you can pass in -w to the setup to hide this warning.",
-													"",
-													"Stay safe on your Linux travels!"
-												};
-												MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-											}
-										}
-										Install(updateInfo);
-									}
-								);
-							};
-
-							try
+							if (we.Cancelled)
 							{
-								webClient.DownloadFileAsync(new Uri(updateInfo.Url), updateInfo.DownloadedPath);
-							}
-							catch (Exception ex)
-							{
-								Program.logger.Log($"update: Failed to start download: {ex.Message}\n{ex.StackTrace}");
-								MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
 								Cancel(updateInfo.DownloadedPath);
+								return;
 							}
-						}));
+							else if (we.Error != null)
+							{
+								Program.logger.Log($"update: Failed to download: {we.Error.Message}\n{we.Error.StackTrace}");
+								MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
+								Cancel(updateInfo.DownloadedPath);
+								return;
+							}
+
+							CreateBackgroundTask(
+								(se, ev) =>
+								{
+									int checkCode = App.IsDownloadOK(updateInfo);
+									if (checkCode > 0)
+									{
+										MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+										Cancel(updateInfo.DownloadedPath);
+										return;
+									}
+								},
+								(se, ev) =>
+								{
+									if (updateInfo.IsLauncher)
+									{
+										if (!updateInfo.IsUpgrade && App.IsRunningWine() && !Program.cliArgs.HideWineMessage)
+										{
+											Program.logger.Log($"update: Wine message triggered");
+											string[] wineMessage = new string[]
+											{
+												"We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.",
+												"",
+												"To get Novarin working via Wine, here's what you need to do:",
+												$" 1. Create a .desktop file that handles the protocol '{Config.AppProtocol}://token123', which calls {Config.AppEXE} (found in Appdata/Local/{Config.AppShortName}) like '{Config.AppEXE.Replace(".exe", "")} --token token123' with token123 being whatever is passed thru to the protocol.",
+												" 2. Install DVXK thru something like winetricks.",
+												"",
+												"If you do those two things correctly, you should be able to play Novarin.",
+												"",
+												"P.S. If your scripting this, you can pass in -w to the setup to hide this warning.",
+												"",
+												"Stay safe on your Linux travels!"
+											};
+											MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+										}
+									}
+									Install(updateInfo);
+								}
+							);
+						};
+
+						try
+						{
+							webClient.DownloadFileAsync(new Uri(updateInfo.Url), updateInfo.DownloadedPath);
+						}
+						catch (Exception ex)
+						{
+							Program.logger.Log($"update: Failed to start download: {ex.Message}\n{ex.StackTrace}");
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
+							Cancel(updateInfo.DownloadedPath);
+						}
 					},
 					(s, e) => { }
 				);
@@ -961,7 +965,7 @@ namespace NovaLauncher.Helpers
 								if (Directory.Exists(updateInfo.InstallPath)) Directory.Delete(updateInfo.InstallPath, true);
 							};
 
-							instance.progressLbl.Visible = true;
+							DoThingsWInvoke(() => instance.progressLbl.Visible = true);
 							ZIP.ExtractZipFile(updateInfo.DownloadedPath, updateInfo.InstallPath, null,
 								delegate (string file, string sizeData)
 								{
@@ -970,12 +974,16 @@ namespace NovaLauncher.Helpers
 									// parts[2] = compressedSize
 									// parts[3] = uncompressedSize
 									string[] parts = sizeData.Split('|');
-									DoThingsWInvoke(new Action(() =>
-										instance.progressLbl.Text = $"Processing ({parts[0]}/{parts[1]}): {file} (c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})"
+									DoThingsWInvoke(() =>
+										instance.progressLbl.Text = string.Join(" ", new string[] {
+											$"Processing ({parts[0]}/{parts[1]}):",
+											file,
+											$"(c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})"
+										}
 									));
 								}
 							);
-							instance.progressLbl.Visible = false;
+							DoThingsWInvoke(() => instance.progressLbl.Visible = false);
 
 							if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
 						}
@@ -1026,24 +1034,23 @@ namespace NovaLauncher.Helpers
 							}
 						};
 
-						instance.Invoke(new Action(() => {
-							Program.logger.Log($"install: Completed {(updateInfo.IsUpgrade ? "upgrade" : "install")} of {updateInfo.Name}.");
-							if (updateInfo.IsLauncher)
+
+						Program.logger.Log($"install: Completed {(updateInfo.IsUpgrade ? "upgrade" : "install")} of {updateInfo.Name}.");
+						if (updateInfo.IsLauncher)
+						{
+							LauncherUpgraded = true;
+							#if NET35
+							if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
 							{
-								LauncherUpgraded = true;
-								#if NET35
-								if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
-								{
-									Program.cliArgs.UpdateInfo = null;
-									PerformLauncherCheck();
-									return;
-								}
-								#endif
-								if (CheckMigrate()) MigrateInstall();
-								else PerformClientCheck();
+								Program.cliArgs.UpdateInfo = null;
+								PerformLauncherCheck();
+								return;
 							}
-							else PerformClientStart();
-						}));
+							#endif
+							if (CheckMigrate()) MigrateInstall();
+							else PerformClientCheck();
+						}
+						else PerformClientStart();
 					}
 				);
 				return;
@@ -1060,7 +1067,7 @@ namespace NovaLauncher.Helpers
 			public void Init()
 			{
 
-				Action f = () =>
+				DoThingsWInvoke(() =>
 				{
 					instance.statusLbl.AutoSize = true;
 					instance.statusLbl.Font = new Font("Microsoft YaHei", 16, FontStyle.Regular, GraphicsUnit.Point);
@@ -1081,11 +1088,10 @@ namespace NovaLauncher.Helpers
 					instance.actionBtn.FlatStyle = FlatStyle.Flat;
 					instance.actionBtn.FlatAppearance.BorderSize = 0;
 					instance.actionBtn.Text = "OK";
-					instance.actionBtn.Enabled = true; 
+					instance.actionBtn.Enabled = true;
 					instance.actionBtn.Visible = true;
-					
-				};
-				if (instance.InvokeRequired) instance.Invoke(f); else f();
+
+				});
 			}
 		}
 		#endregion
@@ -1096,7 +1102,7 @@ namespace NovaLauncher.Helpers
 			public void Init()
 			{
 				UpdateTextWithLog(instance.statusLbl, "Uninstalling...");
-				instance.progressBar.Style = ProgressBarStyle.Marquee;
+				DoThingsWInvoke(() => instance.progressBar.Style = ProgressBarStyle.Marquee);
 
 				CreateBackgroundTask(
 					(s, e) =>
