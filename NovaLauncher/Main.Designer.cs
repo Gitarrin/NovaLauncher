@@ -73,7 +73,7 @@ namespace NovaLauncher
 			this.actionBtn.Cursor = System.Windows.Forms.Cursors.Arrow;
 			this.actionBtn.Font = new System.Drawing.Font("Microsoft YaHei", 9F);
 			this.actionBtn.ForeColor = System.Drawing.Color.WhiteSmoke;
-			this.actionBtn.Location = new System.Drawing.Point(203, 267);
+			this.actionBtn.Location = new System.Drawing.Point(204, 267);
 			this.actionBtn.Name = "actionBtn";
 			this.actionBtn.Size = new System.Drawing.Size(90, 28);
 			this.actionBtn.TabIndex = 4;
@@ -88,7 +88,7 @@ namespace NovaLauncher
 			this.appIcon.BackgroundImage = global::NovaLauncher.Properties.Resources.logo;
 			this.appIcon.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
 			this.appIcon.Image = global::NovaLauncher.Properties.Resources.logo;
-			this.appIcon.Location = new System.Drawing.Point(193, 64);
+			this.appIcon.Location = new System.Drawing.Point(194, 64);
 			this.appIcon.Name = "appIcon";
 			this.appIcon.Size = new System.Drawing.Size(110, 104);
 			this.appIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;

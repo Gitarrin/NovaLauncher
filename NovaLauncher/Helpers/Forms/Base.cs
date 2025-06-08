@@ -8,14 +8,14 @@ namespace NovaLauncher.Helpers.Forms
 	{
 		internal Main instance;
 		public Installer installer;
-		public InstallCompleted installCompleted;
+		public LauncherMessage launcherMessage;
 		public Uninstaller uninstaller;
 
 		public Base(Form f)
 		{
 			instance = (f as Main);
 			installer = new Installer();
-			installCompleted = new InstallCompleted();
+			launcherMessage = new LauncherMessage();
 			uninstaller = new Uninstaller();
 		}
 

@@ -148,9 +148,9 @@ namespace NovaLauncher.Helpers.Forms
 					}
 					latestLauncherInfo = ev.Result as LatestLauncherInfo;
 
-					if (File.Exists(Config.BaseInstallPath + @"\" + Config.AppEXE))
+					if (File.Exists($@"{Config.BaseInstallPath}\{Config.AppEXE}"))
 					{
-						FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(Config.BaseInstallPath + @"\" + Config.AppEXE);
+						FileVersionInfo fvi = FileVersionInfo.GetVersionInfo($@"{Config.BaseInstallPath}\{Config.AppEXE}");
 						launcherVersion = fvi.ProductVersion ?? fvi.FileVersion;
 					};
 
@@ -164,6 +164,7 @@ namespace NovaLauncher.Helpers.Forms
 							bool launcherAffected = alert.VersionsAffected.Count == 0 || alert.VersionsAffected.Contains(launcherVersion);
 							if (launcherAffected)
 							{
+								Program.logger.Log($"Processing alert ({alert.Id}, cc: {alert.CanContinue}): {alert.Message}");
 								if (alert.CanContinue)
 								{
 									helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, "Showing alert...");
@@ -171,18 +172,7 @@ namespace NovaLauncher.Helpers.Forms
 								}
 								else
 								{
-									helperBase.instance.progressBar.Visible = false;
-									helperBase.instance.progressLbl.Visible = false;
-
-									int sH = helperBase.instance.statusLbl.Height;
-									foreach (string line in alert.Message.Split('\n'))
-										helperBase.instance.statusLbl.Height += sH;
-									helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, alert.Message);
-									helperBase.instance.statusLbl.Location = new Point(helperBase.instance.statusLbl.Location.X, helperBase.instance.appIcon.Bottom + (helperBase.instance.actionBtn.Top - helperBase.instance.appIcon.Bottom - helperBase.instance.statusLbl.Height) / 2);
-
-									helperBase.instance.actionBtn.Text = "Close";
-									helperBase.instance.actionBtn.Enabled = true;
-									helperBase.instance.actionBtn.Visible = true;
+									helperBase.launcherMessage.Init(helperBase, alert.Message, null, "Close");
 									helperBase.instance.actionBtn.Click += (se, e) => helperBase.Close();
 									return;
 								}
@@ -276,7 +266,8 @@ namespace NovaLauncher.Helpers.Forms
 					if (Program.cliArgs.Token == null)
 					{
 						// Okay, we weren't launching a client. We'll stop here.
-						if (LauncherUpgraded) helperBase.installCompleted.Init(helperBase);
+						if (LauncherUpgraded)
+							helperBase.launcherMessage.Init(helperBase, "NOVARIN IS SUCCESSFULLY INSTALLED!", "Click the 'Join' button on any game to join the action!", "OK");
 						else
 						{
 							helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Opening {Config.AppShortName}...");
