@@ -166,10 +166,13 @@
 	<ItemGroup>
 		<Compile Include="GlobalSuppressions.cs" />
 		<Compile Include="Helpers\Classes.cs" />
+		<Compile Include="Helpers\Forms\Base.cs" />
+		<Compile Include="Helpers\Forms\InstallCompleted.cs" />
+		<Compile Include="Helpers\Forms\Installer.cs" />
+		<Compile Include="Helpers\Forms\Uninstaller.cs" />
 		<Compile Include="Helpers\Helper.cs" />
 		<Compile Include="Config.cs" />
 		<Compile Include="Errors.cs" />
-		<Compile Include="Helpers\LauncherForm.cs" />
 		<Compile Include="Logger.cs" />
 		<Compile Include="Main.cs" />
 		<Compile Include="Main.Designer.cs">

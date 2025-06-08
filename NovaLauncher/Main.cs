@@ -2,12 +2,13 @@
 using System.Threading;
 using System.Windows.Forms;
 using NovaLauncher.Helpers;
+using NovaLauncher.Helpers.Forms;
 
 namespace NovaLauncher
 {
 	public partial class Main : Form
 	{
-		internal LauncherForm currentInstance;
+		internal Base currentInstance;
 		public Main()
 		{
 			InitializeComponent();
@@ -30,16 +31,16 @@ namespace NovaLauncher
 			devWarningLbl.Visible = true;
 #endif
 
-			LauncherForm.CreateBackgroundTask(
+			currentInstance = new Base(this);
+
+			currentInstance.CreateBackgroundTask(
 				(s, e) =>
 				{
 					Thread.Sleep(500);
 				},
 				(s, e) => {
-					currentInstance = new LauncherForm(this);
-
-					if (Program.cliArgs.Uninstall) currentInstance.uninstaller.Init();
-					else currentInstance.installer.Init();
+					if (Program.cliArgs.Uninstall) currentInstance.uninstaller.Init(currentInstance);
+					else currentInstance.installer.Init(currentInstance);
 				}
 			);
 		}
