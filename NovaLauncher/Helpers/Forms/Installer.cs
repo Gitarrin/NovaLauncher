@@ -49,7 +49,7 @@ namespace NovaLauncher.Helpers.Forms
 			helperBase.Close();
 		}
 
-#if NET35
+		#if NET35
 		private bool SwitchToNewNET() {
 			try
 			{
@@ -62,7 +62,7 @@ namespace NovaLauncher.Helpers.Forms
 			catch { }
 			return false;
 		}
-#endif
+		#endif
 
 		#region Launcher
 
@@ -101,12 +101,6 @@ namespace NovaLauncher.Helpers.Forms
 				};
 			}
 
-			if (CheckMigrate())
-			{
-				MigrateInstall();
-				return;
-			}
-
 			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Connecting to {Config.AppShortName}...");
 			string launcherVersion = App.GetInstalledVersion();
 
@@ -124,13 +118,13 @@ namespace NovaLauncher.Helpers.Forms
 						return;
 					}
 
-#if NET35
+					#if NET35
 					if (SwitchToNewNET()) {
 						Program.logger.Log("launcher: Detected .NET Framework 3.5 & .NET Framework 4.8; alerting user of switchover to .NET Framework 4.8 version.");
 						MessageBox.Show("Hello! This is the Novarin Launcher.\nWe see you are using the .NET Framework 3.5 Launcher and you have .NET Framework 4.8 installed.\nFor the best experience, we'll now switch to the .NET Framework 4.8 version for you :)", Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
 						netFX = "net48";
 					};
-#endif
+					#endif
 
 					// Now, check the Launcher version.
 
@@ -139,9 +133,9 @@ namespace NovaLauncher.Helpers.Forms
 							Config.SelectedServer,
 							Config.LauncherSetup,
 							$"?f={netFX}",
-#if DEBUG
+							#if DEBUG
 							$"&r={new Random().Next()}"
-#endif
+							#endif
 					}));
 				},
 				(s, ev) =>
@@ -256,85 +250,6 @@ namespace NovaLauncher.Helpers.Forms
 			);
 			return;
 		}
-
-		#region Migration - TO BE REMOVED IN 1.3.2.3 RELEASE.
-		private bool CheckMigrate()
-		{
-			// We are no longer using "Novarizz"
-			if (Directory.Exists(Config.BaseLegacyInstallPath) && !Directory.Exists(Config.BaseInstallPath))
-			{
-				Program.logger.Log($"migrate: Legacy exists but Base doesn't.");
-				return true;
-			}
-			else if (Directory.Exists(Config.BaseLegacyInstallPath) && Directory.Exists(Config.BaseInstallPath))
-			{
-				Program.logger.Log($"migrate: Finish up.");
-				try
-				{
-					Directory.Delete(Config.BaseLegacyInstallPath);
-
-					// Update shortcuts & protocols. (Uninstall keys created later on)
-					if (!App.IsRunningWine()) CreateProtocolOpenKeys(Config.BaseInstallPath);
-
-					string shortcutPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.StartMenu)}\Programs\{Config.AppShortName}";
-					if (Directory.Exists(shortcutPath))
-					{
-						foreach (string file in Directory.GetFiles(shortcutPath))
-						{
-							Shortcut sc = Shortcut.CreateInstance(file);
-							sc.TargetPath = sc.TargetPath.Replace(Config.BaseLegacyInstallPath, Config.BaseInstallPath);
-							Shortcut.SaveShortcut(sc);
-						}
-					}
-				}
-				catch (Exception Ex)
-				{
-					Program.logger.Log($"migrate: Failed: {Ex.Message}.");
-					DialogResult dr = MessageBox.Show("Migrate failed.\n" + Ex.Message + "\nAbort to exit. Retry to start migration again. Ignore to continue.", Config.AppName, MessageBoxButtons.AbortRetryIgnore);
-					if (dr == DialogResult.Retry) return true;
-					else if (dr == DialogResult.Abort)
-					{
-						helperBase.Close();
-						return false;
-					}
-				}
-			}
-			return false;
-		}
-		private void MigrateInstall()
-		{
-			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Migrating your install, this may take a moment.");
-
-			helperBase.CreateBackgroundTask(
-				(s, ev) => { Thread.Sleep(1000); },
-				(s, ev) =>
-				{
-					if (Directory.Exists(Config.BaseInstallPath)) Directory.Delete(Config.BaseInstallPath, true);
-
-					// Do the migration
-					string[] args = Environment.GetCommandLineArgs();
-					args[0] = Config.BaseInstallPath + @"\" + Config.AppEXE;
-					string[] cmds =
-					{
-						$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
-						$"ren \"{Config.BaseLegacyInstallPath}\" \"{Config.BaseInstallPath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\", "")}\"",
-						$"mkdir \"{Config.BaseLegacyInstallPath}\"", // so we can trigger second stage
-						$"ping -n 2 127.0.0.1 >nul",
-						$"{string.Join(" ", args)}"
-					};
-
-					Process.Start(new ProcessStartInfo
-					{
-						FileName = "cmd.exe",
-						Arguments = $"/c {string.Join(" && ", cmds)}",
-						WindowStyle = ProcessWindowStyle.Hidden,
-						CreateNoWindow = true
-					});
-					helperBase.Close();
-				}
-			);
-		}
-		#endregion
 		#endregion
 
 		#region Client
@@ -1000,16 +915,15 @@ namespace NovaLauncher.Helpers.Forms
 					if (updateInfo.IsLauncher)
 					{
 						LauncherUpgraded = true;
-#if NET35
+						#if NET35
 						if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
 						{
 							Program.cliArgs.UpdateInfo = null;
 							PerformLauncherCheck();
 							return;
 						}
-#endif
-						if (CheckMigrate()) MigrateInstall();
-						else PerformClientCheck();
+						#endif
+						PerformClientCheck();
 					}
 					else PerformClientStart();
 				}
