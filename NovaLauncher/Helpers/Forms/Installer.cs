@@ -439,8 +439,8 @@ namespace NovaLauncher.Helpers.Forms
 
 		private void PerformClientStart()
 		{
-			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Starting {gameClient.Name}...");
 			Program.logger.Log($"clientStart: Launch {gameClient.Name} as {launchData.LaunchType}");
+			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Starting {gameClient.Name}...");
 			helperBase.instance.actionBtn.Enabled = false;
 			helperBase.instance.actionBtn.Visible = false;
 
@@ -811,7 +811,7 @@ namespace NovaLauncher.Helpers.Forms
 									string[] reUpInfo = {
 										Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(updateInfo))),
 										Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(latestLauncherInfo)))
-								};
+									};
 									string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
 
 									string toPath = App.IsRunningFromInstall()
@@ -823,7 +823,7 @@ namespace NovaLauncher.Helpers.Forms
 										$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
 										$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{toPath}\"",
 										$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
-								};
+									};
 									Process.Start(new ProcessStartInfo
 									{
 										FileName = "cmd.exe",
