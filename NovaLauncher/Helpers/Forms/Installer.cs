@@ -575,6 +575,7 @@ namespace NovaLauncher.Helpers.Forms
 			);
 			return;
 		}
+
 		#endregion
 
 		#region Download/Install/Upgrade/etc.
@@ -892,12 +893,15 @@ namespace NovaLauncher.Helpers.Forms
 						try
 						{
 							Program.logger.Log($"configure: Creating shortcuts...");
-							App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", updateInfo.InstallPath + @"\" + Config.AppEXE, "");
-							if (
-								gameClient != null &&
-								File.Exists(updateInfo.InstallPath + @"\" + gameClient.StudioExecutable)
-							)
-								App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", updateInfo.InstallPath + @"\" + gameClient.StudioExecutable, "");
+							if (updateInfo.IsLauncher)
+								App.CreateShortcut(Config.AppName, $"{Config.AppShortName} Launcher", $@"{updateInfo.InstallPath}\{Config.AppEXE}", "");
+							else if (gameClient != null)
+							{
+								if (File.Exists($@"{updateInfo.InstallPath}\{gameClient.StudioExecutable}"))
+									App.CreateShortcut($"{gameClient.Name} Studio", $"Launches {gameClient.Name} Studio", $@"{updateInfo.InstallPath}\{gameClient.StudioExecutable}", "");
+								else
+									App.DeleteShortcut($"{gameClient.Name} Studio");
+							};
 						}
 						catch (Exception ex)
 						{

@@ -392,6 +392,16 @@ namespace NovaLauncher.Helpers
 			Shortcut.SaveShortcut(sc);
 		}
 
+		public static void DeleteShortcut(string title)
+		{
+			string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+			if (!Directory.Exists(shortcutPath)) return;
+
+			string shortcutLink = $@"{shortcutPath}\{title}.lnk";
+			if (!File.Exists(shortcutLink)) return;
+			File.Delete(shortcutLink);
+		}
+
 		public static string GetOS()
 		{
 			return $"{new Microsoft.VisualBasic.Devices.ComputerInfo().OSFullName}";
