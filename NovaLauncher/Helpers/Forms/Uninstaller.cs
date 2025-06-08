@@ -105,7 +105,7 @@ namespace NovaLauncher.Helpers.Forms
 			try
 			{
 				string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
-				if (Directory.Exists(shortcutPath)) Directory.Delete(shortcutPath);
+				if (Directory.Exists(shortcutPath)) Directory.Delete(shortcutPath, true);
 			}
 			catch { };
 		}
