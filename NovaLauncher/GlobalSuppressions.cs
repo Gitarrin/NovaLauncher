@@ -5,4 +5,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Style", "IDE0038:Use pattern matching", Justification = "<Pending>", Scope = "member", Target = "~M:NovaLauncher.Installer.Install(NovaLauncher.UpdateInfo)")]
+[assembly: SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "<Pending>", Scope = "member", Target = "~F:NovaLauncher.Logger.lQ")]
+[assembly: SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "<Pending>", Scope = "member", Target = "~F:NovaLauncher.Logger.lQLock")]
+[assembly: SuppressMessage("Style", "IDE0038:Use pattern matching", Justification = "<Pending>", Scope = "member", Target = "~M:NovaLauncher.Helpers.Forms.Installer.Install(NovaLauncher.UpdateInfo)")]
