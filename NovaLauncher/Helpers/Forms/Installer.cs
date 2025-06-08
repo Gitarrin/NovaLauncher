@@ -311,11 +311,13 @@ namespace NovaLauncher.Helpers.Forms
 						string serverClientVersion = kvp.Key;
 						LauncherClient serverClient = kvp.Value;
 
+						string clientPath = $@"{Config.BaseInstallPath}\clients";
+						if (!Directory.Exists(clientPath)) Directory.CreateDirectory(clientPath);
+
 						string legacyInstallPath = $@"{Config.BaseInstallPath}\{serverClientVersion}";
-						string installPath = $@"{Config.BaseInstallPath}\clients\{serverClientVersion}";
+						string installPath = $@"{clientPath}\{serverClientVersion}";
 						if (Directory.Exists(legacyInstallPath))
 						{
-							if (!Directory.Exists($@"{Config.BaseInstallPath}\clients")) Directory.CreateDirectory($@"{Config.BaseInstallPath}\clients");
 							if (Directory.Exists(installPath)) Directory.Delete(installPath);
 
 							Program.logger.Log($"clientCheck: {serverClient.Name} found outside clients folder, moving...");
@@ -327,6 +329,22 @@ namespace NovaLauncher.Helpers.Forms
 							Program.logger.Log($"clientCheck: {serverClient.Name} marked as REMOVED, purging...");
 							try { App.PurgeFilesAndFolders(installPath); Directory.Delete(installPath); } catch { };
 						};
+
+						// Legacy key & protocol key removal
+						try
+						{
+							// Protocol key
+							RegistryKey classesKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Classes", true);
+							Registry.RemoveRegKeys(classesKey, $"novarin{serverClientVersion.Substring(2)}");
+							classesKey.Close();
+
+							// Uninstall key
+							RegistryKey uninstallKey = (App.IsOlderWindows() || App.IsRunningWine()) ? Microsoft.Win32.Registry.LocalMachine : Microsoft.Win32.Registry.CurrentUser;
+							uninstallKey = uninstallKey.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
+							Registry.RemoveRegKeys(uninstallKey, $"Novarin {serverClientVersion}");
+							uninstallKey.Close();
+						} catch { }
+
 					}
 
 					LauncherClient client = latestLauncherInfo.Clients[launchData.Version];
@@ -454,32 +472,26 @@ namespace NovaLauncher.Helpers.Forms
 						process = new Process()
 						{
 							StartInfo =
-						{
-							FileName = gameClient.InstallPath + @"\" + gameClient.HostExecutable,
-							Arguments = $"-t {launchData.LaunchToken}",
-							WindowStyle = ProcessWindowStyle.Normal,
-							WorkingDirectory = gameClient.InstallPath
-						}
+							{
+								FileName = $@"{gameClient.InstallPath}\{gameClient.HostExecutable}",
+								Arguments = $"-t {launchData.LaunchToken}",
+								WindowStyle = ProcessWindowStyle.Normal,
+								WorkingDirectory = gameClient.InstallPath
+							}
 						};
-
-						process.Start();
-						helperBase.instance.progressBar.Value = 50;
 					}
 					else if (launchData.LaunchType == "studio" || launchData.LaunchType == "build")
 					{
 						process = new Process()
 						{
 							StartInfo =
-						{
-							FileName = gameClient.InstallPath + @"\" + gameClient.StudioExecutable,
-							Arguments = $"-url \"{gameClient.GameBase}/Login/Negotiate.ashx\" -ticket \"{launchData.Ticket}\" -{(launchData.LaunchType == "build" ? "build" : "ide")} -script \"{launchData.JoinScript}\"",
-							WindowStyle = ProcessWindowStyle.Normal,
-							WorkingDirectory = gameClient.InstallPath
-						}
+							{
+								FileName = $@"{gameClient.InstallPath}\{gameClient.StudioExecutable}",
+								Arguments = $"-url \"{gameClient.GameBase}/Login/Negotiate.ashx\" -ticket \"{launchData.Ticket}\" -{(launchData.LaunchType == "build" ? "build" : "ide")} -script \"{launchData.JoinScript}\"",
+								WindowStyle = ProcessWindowStyle.Normal,
+								WorkingDirectory = gameClient.InstallPath
+							}
 						};
-
-						process.Start();
-						helperBase.instance.progressBar.Value = 50;
 					}
 					else
 					{
@@ -488,68 +500,64 @@ namespace NovaLauncher.Helpers.Forms
 						process = new Process()
 						{
 							StartInfo =
-						{
-							FileName = gameClient.InstallPath + @"\" + gameClient.Executable,
-							Arguments = $"-a \"{gameClient.GameBase}/Login/Negotiate.ashx\" -t \"{launchData.Ticket}\" -j \"{launchData.JoinScript}\"",
-							WindowStyle = ProcessWindowStyle.Maximized,
-							WorkingDirectory = gameClient.InstallPath
-						}
-						};
-
-						process.Start();
-						helperBase.instance.progressBar.Value = 50;
-
-						int waited = 0;
-						int stop_waiting = 60000;
-						while (true)
-						{
-							if (!string.IsNullOrEmpty(process.MainWindowTitle)) break; // The game actually launched!
-							if (waited >= stop_waiting) break; // Timeout
-							if (process.HasExited) break; // Process died for some reason
-							Thread.Sleep(1000);
-							process.Refresh();
-							waited += 1000;
-						}
-						if (waited >= stop_waiting || process.HasExited)
-						{
-							if (waited >= stop_waiting && !process.HasExited) process.Kill(); // Attempt to kill it (ain't going anywhere...)
-							Program.logger.Log($"clientStart: Failed to start because: {(waited >= stop_waiting ? "timeout" : "process exited")}");
-							MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientTimeout, new Dictionary<string, string>() { { "{CLIENT}", gameClient.Name } }), gameClient.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
-							helperBase.Close();
-							return;
-						}
-
-						try
-						{
-							// Some old Robloxs' needs a little help sometimes.
-
-							int[] bringYears = { 2008, 2009, 2010, 2011, 2012, 2013, 2014 };
-							bool helpARobloxOut = false;
-
-							foreach (int year in bringYears)
 							{
-								if (gameClient.Name.Contains(year.ToString()))
-								{
-									helpARobloxOut = true;
-									break;
-								}
+								FileName = $@"{gameClient.InstallPath}\{gameClient.Executable}",
+								Arguments = $"-a \"{gameClient.GameBase}/Login/Negotiate.ashx\" -t \"{launchData.Ticket}\" -j \"{launchData.JoinScript}\"",
+								WindowStyle = ProcessWindowStyle.Maximized,
+								WorkingDirectory = gameClient.InstallPath
 							}
-
-							if (helpARobloxOut) App.BringToFront(process.MainWindowTitle);
-						}
-						catch { };
+						};
 					};
 
+					process.Start();
+					helperBase.instance.progressBar.Value = 25;
+
+					int waited = 0;
+					int alert_waiting = 45000;
+					int stop_waiting = 90000;
+					while (true)
+					{
+						if (!string.IsNullOrEmpty(process.MainWindowTitle)) break; // The game actually launched!
+						if (waited >= alert_waiting)
+						{
+							helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"{gameClient.Name} is taking a bit to start...");
+							helperBase.DoThingsWInvoke(() =>
+							{
+								helperBase.instance.progressLbl.Visible = true;
+								helperBase.instance.progressLbl.Text = $"Waiting for {(stop_waiting - waited) / 1000}s...";
+							});
+						}
+						else helperBase.DoThingsWInvoke(() => helperBase.instance.progressLbl.Visible = false);
+						if (waited >= stop_waiting) break; // Timeout
+						if (process.HasExited) break; // Process died for some reason
+						Thread.Sleep(1000);
+						process.Refresh();
+						waited += 1000;
+					}
+					if (waited >= stop_waiting || process.HasExited)
+					{
+						if (waited >= stop_waiting && !process.HasExited) process.Kill(); // Attempt to kill it (ain't going anywhere...)
+						Program.logger.Log($"clientStart: Failed to start because: {(waited >= stop_waiting ? "timeout" : "process exited")}");
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.LaunchClientTimeout, new Dictionary<string, string>() { { "{CLIENT}", gameClient.Name } }), gameClient.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						helperBase.Close();
+						return;
+					}
+					helperBase.instance.progressBar.Value = 50;
+
+					// Always try to bring to foreground.
+					try { App.BringToFront(process.MainWindowTitle); }
+					catch { };
+					helperBase.instance.progressBar.Value = 75;
+
 					// Discord RPC
-					Process rpcProcess;
-					if (useRPC && File.Exists(Config.BaseInstallPath + @"\NovarinRPCManager.exe"))
+					if (useRPC && File.Exists($@"{Config.BaseInstallPath}\NovarinRPCManager.exe"))
 					{
 						Program.logger.Log("clientStart: Starting RPC Manager...");
-						rpcProcess = new Process()
+						Process rpcProcess = new Process()
 						{
 							StartInfo =
 							{
-								FileName = Config.BaseInstallPath + @"\NovarinRPCManager.exe",
+								FileName = $@"{Config.BaseInstallPath}\NovarinRPCManager.exe",
 								Arguments = $"-j {launchData.JobId} -g {launchData.PlaceId} -l {Config.AppProtocol} -p {process.Id}",
 								WindowStyle = ProcessWindowStyle.Hidden,
 								WorkingDirectory = Config.BaseInstallPath
@@ -700,13 +708,6 @@ namespace NovaLauncher.Helpers.Forms
 			try
 			{
 				RegistryKey classesKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Classes", true);
-
-				// -- START LEGACY KEY REMOVAL -- WE ARE AIO SO LET'S CLEAN UP OUR ORIGINAL MESS
-				Registry.RemoveRegKeys(classesKey, "novarin12");
-				Registry.RemoveRegKeys(classesKey, "novarin15");
-				Registry.RemoveRegKeys(classesKey, "novarin16");
-				// -- END LEGACY KEY REMOVAL --
-
 				Registry.RemoveRegKeys(classesKey, "novarin"); // Delete old one
 
 				string fullPath = $@"{installPath}\{Config.AppEXE}";
@@ -732,15 +733,9 @@ namespace NovaLauncher.Helpers.Forms
 				RegistryKey uninstallKey = (App.IsOlderWindows() || App.IsRunningWine()) ? Microsoft.Win32.Registry.LocalMachine : Microsoft.Win32.Registry.CurrentUser;
 				uninstallKey = uninstallKey.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
 
-				// -- START LEGACY KEY REMOVAL -- WE ARE AIO SO LET'S CLEAN UP OUR ORIGINAL MESS
-				Registry.RemoveRegKeys(uninstallKey, "Novarin 2012");
-				Registry.RemoveRegKeys(uninstallKey, "Novarin 2015");
-				Registry.RemoveRegKeys(uninstallKey, "Novarin 2016");
-				// -- END LEGACY KEY REMOVAL --
-
 				RegistryKey key = uninstallKey.CreateSubKey(Config.AppName);
 				key.SetValue("DisplayName", Config.AppName);
-				key.SetValue("DisplayIcon", installPath + @"\" + Config.AppEXE);
+				key.SetValue("DisplayIcon", $@"{installPath}\{Config.AppEXE}");
 				key.SetValue("Publisher", "Novarin");
 
 				key.SetValue("DisplayVersion", App.GetInstalledVersion());
@@ -759,7 +754,7 @@ namespace NovaLauncher.Helpers.Forms
 				if (key.GetValue("InstallDate") == null) key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
 				key.SetValue("EstimatedSize", (int)App.CalculateDirectorySize(installPath) / 1024, RegistryValueKind.DWord);
 
-				key.SetValue("UninstallString", installPath + @"\" + Config.AppEXE + " --uninstall");
+				key.SetValue("UninstallString", $@"{installPath}\{Config.AppEXE} --uninstall");
 				key.SetValue("InstallLocation", installPath);
 				key.SetValue("NoModify", 1);
 				key.SetValue("NoRepair", 1);
@@ -795,7 +790,7 @@ namespace NovaLauncher.Helpers.Forms
 									string[] files = Directory.GetFiles(updateInfo.InstallPath);
 									foreach (string file in files)
 									{
-										if (file == updateInfo.InstallPath + @"\" + Config.AppEXE) continue;
+										if (file == $@"{updateInfo.InstallPath}\{Config.AppEXE}") continue;
 										File.Delete(file);
 									}
 								}
@@ -852,9 +847,9 @@ namespace NovaLauncher.Helpers.Forms
 								string[] parts = sizeData.Split('|');
 								helperBase.DoThingsWInvoke(() =>
 									helperBase.instance.progressLbl.Text = string.Join(" ", new string[] {
-											$"Processing ({parts[0]}/{parts[1]}):",
-											file,
-											$"(c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})"
+										$"Processing ({parts[0]}/{parts[1]}):",
+										file,
+										$"(c: {Web.FormatBytes(long.Parse(parts[2]))} u: {Web.FormatBytes(long.Parse(parts[3]))})"
 									}
 								));
 							}

@@ -19,7 +19,11 @@ namespace NovaLauncher.Helpers.Forms
 			uninstaller = new Uninstaller();
 		}
 
-		internal void Close() => Application.Exit();
+		internal void Close()
+		{
+			if (instance != null) DoThingsWInvoke(() => instance.Close());
+			else Application.Exit();
+		}
 
 		internal void DoThingsWInvoke(Action f, Control c = null)
 		{
