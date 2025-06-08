@@ -50,18 +50,18 @@ namespace NovaLauncher.Helpers.Forms
 		}
 
 #if NET35
-			private bool SwitchToNewNET() {
-				try
+		private bool SwitchToNewNET() {
+			try
+			{
+				RegistryKey NET4 = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\NET Framework Setup\NDP\v4\Full");
+				if (NET4 != null)
 				{
-					RegistryKey NET4 = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\NET Framework Setup\NDP\v4\Full");
-					if (NET4 != null)
-					{
-						return (string.Compare((string)NET4.GetValue(@"Version"), "4.8.00000") == 1);
-					}
+					return (string.Compare((string)NET4.GetValue(@"Version"), "4.8.00000") == 1);
 				}
-				catch { }
-				return false;
 			}
+			catch { }
+			return false;
+		}
 #endif
 
 		#region Launcher
@@ -315,7 +315,7 @@ namespace NovaLauncher.Helpers.Forms
 					string[] args = Environment.GetCommandLineArgs();
 					args[0] = Config.BaseInstallPath + @"\" + Config.AppEXE;
 					string[] cmds =
-						{
+					{
 						$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
 						$"ren \"{Config.BaseLegacyInstallPath}\" \"{Config.BaseInstallPath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\", "")}\"",
 						$"mkdir \"{Config.BaseLegacyInstallPath}\"", // so we can trigger second stage
@@ -1001,12 +1001,12 @@ namespace NovaLauncher.Helpers.Forms
 					{
 						LauncherUpgraded = true;
 #if NET35
-							if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
-							{
-								Program.cliArgs.UpdateInfo = null;
-								PerformLauncherCheck();
-								return;
-							}
+						if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
+						{
+							Program.cliArgs.UpdateInfo = null;
+							PerformLauncherCheck();
+							return;
+						}
 #endif
 						if (CheckMigrate()) MigrateInstall();
 						else PerformClientCheck();
