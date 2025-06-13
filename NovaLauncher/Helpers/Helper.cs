@@ -376,7 +376,7 @@ namespace NovaLauncher.Helpers
 
 		public static void CreateShortcut(string title, string desc, string path, string args = "")
 		{
-			string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+			string shortcutPath = Shortcut.GetShortcutPath();
 			if (!Directory.Exists(shortcutPath)) Directory.CreateDirectory(shortcutPath);
 
 			string shortcutLink = $@"{shortcutPath}\{title}.lnk";
@@ -394,7 +394,7 @@ namespace NovaLauncher.Helpers
 
 		public static void DeleteShortcut(string title)
 		{
-			string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+			string shortcutPath = Shortcut.GetShortcutPath();
 			if (!Directory.Exists(shortcutPath)) return;
 
 			string shortcutLink = $@"{shortcutPath}\{title}.lnk";

@@ -107,6 +107,11 @@ namespace NovaLauncher
 
 			shortcutType.InvokeMember("Save", BindingFlags.Public | BindingFlags.Instance | BindingFlags.InvokeMethod, null, sc.ShortcutObject, null);
 		}
+
+		public static string GetShortcutPath()
+		{
+			return Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + @"\Programs\" + Config.AppShortName;
+		}
 	}
 	#endregion
 
