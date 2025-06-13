@@ -10,7 +10,7 @@ namespace NovaLauncher
 	#region App
 	public sealed class CLIArgs
 	{
-		[Option('t', "token", Required = false, HelpText = "Used in launching roblox. Authentication.")]
+		[Option('t', "token", Required = false, HelpText = "Parsed input that is sent to Roblox client/studio.")]
 		public string Token { get; set; }
 
 		[Option('u', "update", Required = false, HelpText = "Forces an update to the launcher.")]
