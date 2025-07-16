@@ -610,7 +610,7 @@ namespace NovaLauncher.Helpers.Forms
 							else if (we?.Error != null)
 							{
 								Program.logger.Log($"update: Failed to download: {we.Error.Message}\n{we.Error.StackTrace}");
-								MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
+								MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{NAME}", updateInfo.Name }, { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
 								Cancel(updateInfo.DownloadedPath);
 								return;
 							}
@@ -635,17 +635,17 @@ namespace NovaLauncher.Helpers.Forms
 										Program.logger.Log($"update: Wine message triggered");
 										string[] wineMessage = new string[]
 										{
-												"We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.",
-												"",
-												"To get Novarin working via Wine, here's what you need to do:",
-												$" 1. Create a .desktop file that handles the protocol '{Config.AppProtocol}://token123', which calls {Config.AppEXE} (found in Appdata/Local/{Config.AppShortName}) like '{Config.AppEXE.Replace(".exe", "")} --token token123' with token123 being whatever is passed thru to the protocol.",
-												" 2. Install DVXK thru something like winetricks.",
-												"",
-												"If you do those two things correctly, you should be able to play Novarin.",
-												"",
-												"P.S. If your scripting this, you can pass in -w to the setup to hide this warning.",
-												"",
-												"Stay safe on your Linux travels!"
+											"We have detected that you are installing Novarin via Wine. We will attempt to make your experience as smooth as possible (like RPC being native probably), but some configuration is required.",
+											"",
+											"To get Novarin working via Wine, here's what you need to do:",
+											$" 1. Create a .desktop file that handles the protocol '{Config.AppProtocol}://token123', which calls {Config.AppEXE} (found in Appdata/Local/{Config.AppShortName}) like '{Config.AppEXE.Replace(".exe", "")} --token token123' with token123 being whatever is passed thru to the protocol.",
+											" 2. Install DVXK thru something like winetricks.",
+											"",
+											"If you do those two things correctly, you should be able to play Novarin.",
+											"",
+											"P.S. If your scripting this, you can pass in -w to the setup to hide this warning.",
+											"",
+											"Stay safe on your Linux travels!"
 										};
 										MessageBox.Show(string.Join("\n", wineMessage), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 									}
@@ -812,19 +812,26 @@ namespace NovaLauncher.Helpers.Forms
 										? (App.IsWindows() ? Process.GetCurrentProcess().MainModule.FileName : Assembly.GetExecutingAssembly().Location)
 										: $@"{updateInfo.InstallPath}\{Config.AppEXE}";
 
-									string[] cmds =
-									{
-										$"ping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
-										$"move /Y \"{Path.GetTempPath()}\\{Config.AppEXE}\" \"{toPath}\"",
-										$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}"
-									};
+									string tmpBat = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName().Split('.')[0]}.bat");
+									File.WriteAllLines(tmpBat, new[] {
+										"@echo off",
+										":yoho",
+										$"tasklist | find /i \"{Config.AppEXE}\" >nul",
+										"if %errorlevel%==0 (",
+										"\tping -n 2 127.0.0.1 >nul", // Give us ~2 seconds to make sure the launcher closes.
+										"\tgoto yoho",
+										")",
+										$"move /Y \"{Path.Combine(Path.GetTempPath(), Config.AppEXE)}\" \"{toPath}\"",
+										$"\"{toPath}\" {string.Join(" ", args)} --upinfo {string.Join("_", reUpInfo)}",
+										"del \"%~f0\""
+									});
 									Process.Start(new ProcessStartInfo
 									{
-										FileName = "cmd.exe",
-										Arguments = $"/c {string.Join(" && ", cmds)}",
+										FileName = tmpBat,
 										WindowStyle = ProcessWindowStyle.Hidden,
 										CreateNoWindow = true
 									});
+
 									helperBase.Close();
 									return;
 								};
@@ -868,7 +875,7 @@ namespace NovaLauncher.Helpers.Forms
 					if (exc != null)
 					{
 						Program.logger.Log($"install: Failed to extract: {exc.Message}{(exc.StackTrace != null ? "\n" + exc.StackTrace : "")}");
-						DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{ERROR}", exc.Message }, { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
+						DialogResult retry = MessageBox.Show(Error.GetErrorMsg(Error.Installer.ExtractFailed, new Dictionary<string, string>() { { "{NAME}", updateInfo.Name }, { "{ERROR}", exc.Message }, { "{INSTALLPATH}", updateInfo.InstallPath } }), Config.AppEXE, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error);
 						if (retry == DialogResult.Retry)
 						{
 							Install(updateInfo);

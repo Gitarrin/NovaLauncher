@@ -14,7 +14,7 @@ namespace NovaLauncher.Helpers.Forms
 			helperBase.DoThingsWInvoke(() =>
 			{
 				int sH = helperBase.instance.statusLbl.Height;
-				helperBase.instance.statusLbl.Font = new Font("Microsoft YaHei", 16, FontStyle.Regular, GraphicsUnit.Point);
+				helperBase.instance.statusLbl.Font = new Font("Arial", 16, FontStyle.Regular, GraphicsUnit.Point);
 				foreach (string line in title.Split('\n'))
 					helperBase.instance.statusLbl.Height += sH;
 				helperBase.instance.statusLbl.Text = title;

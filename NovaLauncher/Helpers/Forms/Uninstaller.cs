@@ -1,9 +1,9 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace NovaLauncher.Helpers.Forms
 {
@@ -112,53 +112,48 @@ namespace NovaLauncher.Helpers.Forms
 
 		internal void CompleteUninstallation()
 		{
-			string installPath = Config.BaseInstallPath;
-			string exePath = $@"{installPath}\{Config.AppName}";
+			string exePath = $@"{Config.BaseInstallPath}\{Config.AppEXE}";
 
-			// Create a batch file to handle the uninstallation
-			string batchFilePath = Path.Combine(Path.GetTempPath(), Config.AppName.Replace(" ", "") + "Uninstaller.bat");
+			string tmpBat = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName().Split('.')[0]}.bat");
+			string[] uninstallBat = new[] {
+				"@ech off",
+				"setlocal",
+				"set max_retries=10",
+				"set retry_count=0",
+				"ping -n 1 127.0.0.1 >nul",
+				"",
+				":delete_exe",
+				$"del /f /q \"{exePath}\" 2>nul",
+				"if %errorlevel% neq 0 (",
+				"\tset /a retry_count+=1",
+				"\tif %retry_count% geq %max_retries% (",
+				$"\t\techo Failed to delete {Config.AppEXE} after %max_retries% retries.",
+				"\t\texit /b 1",
+				"\t)",
+				"\tping -n 2 127.0.0.1 >nul",
+				"\tgoto delete_exe",
+				")",
+				"",
+				":delete_installdir",
+				$"rmdir /s /q \"{Config.BaseInstallPath}\" 2>nul",
+				"if %errorlevel% neq 0 (",
+				"\techo Failed to delete the installation directory.",
+				"\texit /b 1",
+				")",
+				"",
+				":delete_uninstaller",
+				$"del /f /q \"{tmpBat}\" 2>nul",
+				"if %errorlevel% neq 0 (",
+				"\techo Failed to delete the installation directory.",
+				"\texit /b 1",
+				")",
+				"",
+				"del \"%~f0\""
+			};
 
-			string cmdCommand = $@"
-				@echo off
-				setlocal
-				set max_retries=10
-				set retry_count=0
-				ping -n 1 127.0.0.1 >nul
-
-				:delete_exe
-				del /f /q ""{exePath}"" 2>nul
-				if %errorlevel% neq 0 (
-					set /a retry_count+=1
-					if %retry_count% geq %max_retries% (
-						echo Failed to delete NovaLauncher.exe after %max_retries% retries.
-						exit /b 1
-					)
-					ping -n 2 127.0.0.1 >nul
-					goto delete_exe
-				)
-
-				:delete_directory
-				rmdir /s /q ""{installPath}"" 2>nul
-				if %errorlevel% neq 0 (
-					echo Failed to delete the installation directory.
-					exit /b 1
-				)
-
-				:delete_uninstaller
-				del /f /q ""{batchFilePath}"" 2>nul
-				if %errorlevel% neq 0 (
-					echo Failed to delete the uninstaller batch file.
-					exit /b 1
-				)
-
-				echo Uninstallation completed successfully.
-				exit /b 0
-			";
-
-			// Write the batch file to disk
 			try
 			{
-				File.WriteAllText(batchFilePath, cmdCommand);
+				File.WriteAllLines(tmpBat, uninstallBat);
 			}
 			catch (Exception ex)
 			{
@@ -166,13 +161,11 @@ namespace NovaLauncher.Helpers.Forms
 				return;
 			}
 
-			// Execute the batch file and exit the uninstaller
 			try
 			{
 				Process.Start(new ProcessStartInfo
 				{
-					FileName = "cmd.exe",
-					Arguments = $"/c \"{batchFilePath}\"",
+					FileName = tmpBat,
 					WindowStyle = ProcessWindowStyle.Hidden,
 					CreateNoWindow = true
 				});
