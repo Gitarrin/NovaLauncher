@@ -44,7 +44,7 @@ namespace NovaLauncher
 			// verLbl
 			// 
 			this.verLbl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-			this.verLbl.Font = new System.Drawing.Font("Microsoft YaHei", 6F);
+			this.verLbl.Font = new System.Drawing.Font("Arial", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.verLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(120)))), ((int)(((byte)(120)))));
 			this.verLbl.Location = new System.Drawing.Point(12, 306);
 			this.verLbl.Name = "verLbl";
@@ -57,7 +57,7 @@ namespace NovaLauncher
 			// 
 			this.statusLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
 			this.statusLbl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-			this.statusLbl.Font = new System.Drawing.Font("Microsoft YaHei", 11.25F);
+			this.statusLbl.Font = new System.Drawing.Font("Arial", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.statusLbl.ForeColor = System.Drawing.Color.WhiteSmoke;
 			this.statusLbl.Location = new System.Drawing.Point(12, 188);
 			this.statusLbl.Name = "statusLbl";
@@ -71,7 +71,7 @@ namespace NovaLauncher
 			// 
 			this.actionBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
 			this.actionBtn.Cursor = System.Windows.Forms.Cursors.Arrow;
-			this.actionBtn.Font = new System.Drawing.Font("Microsoft YaHei", 9F);
+			this.actionBtn.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.actionBtn.ForeColor = System.Drawing.Color.WhiteSmoke;
 			this.actionBtn.Location = new System.Drawing.Point(204, 267);
 			this.actionBtn.Name = "actionBtn";
@@ -109,7 +109,7 @@ namespace NovaLauncher
 			// 
 			this.progressLbl.AutoEllipsis = true;
 			this.progressLbl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-			this.progressLbl.Font = new System.Drawing.Font("Microsoft YaHei", 6F);
+			this.progressLbl.Font = new System.Drawing.Font("Arial", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.progressLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
 			this.progressLbl.Location = new System.Drawing.Point(12, 243);
 			this.progressLbl.Name = "progressLbl";
@@ -122,7 +122,7 @@ namespace NovaLauncher
 			// devWarningLbl
 			// 
 			this.devWarningLbl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-			this.devWarningLbl.Font = new System.Drawing.Font("Microsoft YaHei", 6F);
+			this.devWarningLbl.Font = new System.Drawing.Font("Arial", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.devWarningLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
 			this.devWarningLbl.Location = new System.Drawing.Point(12, 9);
 			this.devWarningLbl.Name = "devWarningLbl";
