@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -52,8 +53,9 @@ namespace NovaLauncher.Helpers
 			return $"NovarinLauncher/{version}";
 		}
 
-		public static bool FindBestServer()
+		public static string FindBestServer()
 		{
+			List<string> serverResponses = new List<string>();
 			for (int serverIndex = 1; serverIndex <= Config.Servers.Length; serverIndex++)
 			{
 				string server = Config.Servers[serverIndex - 1];
@@ -71,16 +73,18 @@ namespace NovaLauncher.Helpers
 						if (
 							response.StatusCode == HttpStatusCode.OK &&
 							!string.IsNullOrEmpty(recvData) &&
-							recvData != " " &&
-							!recvData.Contains("Server Down") &&
-							!recvData.Contains("Error")
+							recvData.Contains($"omg.. this cant be.. {server.Split(':')[1].Replace("//", "")}!?")
 						)
 						{
 							Program.logger.Log($"serverSelector: {serverIndex} selected!");
 							Config.SelectedServer = server;
-							return true;
+							break;
 						};
-						Program.logger.Log($"serverSelector: {serverIndex} will not select: got string {recvData}");
+
+						bool isHtmlResponse = recvData.ToLower().StartsWith("<!doctype") || recvData.ToLower().StartsWith("<html>");
+
+						Program.logger.Log($"serverSelector: {serverIndex} will not select: got {(isHtmlResponse ? "html" : "string")} {recvData}");
+						serverResponses.Add($"{serverIndex}: {(isHtmlResponse ? "unexpected html (block? down?)" : "str" + recvData)}");
 					}
 
 					client = null;
@@ -88,12 +92,13 @@ namespace NovaLauncher.Helpers
 				catch (Exception Ex)
 				{
 					Program.logger.Log($"serverSelector: {serverIndex} will not select: got error {Ex.Message}");
+					serverResponses.Add($"{serverIndex}: err-{Ex.Message}");
 				}
 			}
 
 			// Couldn't find one :(, assume blocked/DNS issue/all servers down/etc.
 			Program.logger.Log($"serverSelector: Out of servers to select. Bailing...!");
-			return false;
+			return $"{(string.IsNullOrEmpty(Config.SelectedServer) ? "NOT " : "")}OK\n{string.Join("\n", serverResponses.ToArray())}";
 		}
 
 		public static T GetLatestServerVersionInfo<T>(string location)

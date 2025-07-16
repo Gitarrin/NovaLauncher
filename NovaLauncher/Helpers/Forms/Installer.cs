@@ -112,9 +112,10 @@ namespace NovaLauncher.Helpers.Forms
 				{
 					// Let's determine the best server.
 					Program.logger.Log("serverSelector: Finding server...");
-					if (!Web.FindBestServer())
+					string serverResponses = Web.FindBestServer();
+					if (!serverResponses.StartsWith("OK"))
 					{
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show(Error.GetErrorMsg(Error.Installer.ConnectFailed, new Dictionary<string, string>() { { "{SERVERRESPONSES}", Config.Debug ? $"\nServer Selector said:\n{serverResponses?.Replace("NOT OK\n", "")}" : "" } }), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						helperBase.Close();
 						return;
 					}
