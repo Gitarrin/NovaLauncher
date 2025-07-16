@@ -59,7 +59,7 @@ namespace NovaLauncher
 
 			// Start logger
 			logger = new Logger();
-			logger.Log($"{Config.AppName}  -  v{Helpers.App.GetInstalledVersion()} on {Helpers.App.GetOS()}");
+			logger.Log($"{Config.AppName}  -  v{Helpers.App.GetInstalledVersion()} on {Helpers.App.OSVersion.ToString()}");
 			logger.Log($".NET Framework CLR: {Helpers.App.GetNETVersion()[0]} | .NET Framework Target: {Helpers.App.GetNETVersion()[1]}");
 			logger.Log($" - Running from Base Install path? {Helpers.App.IsRunningFromInstall()}");
 			logger.Log(" - Running Windows? " + (

@@ -404,134 +404,139 @@ namespace NovaLauncher.Helpers
 		}
 
 
-		[DllImport("kernel32.dll")]
-		private static extern bool GetProductInfo(
-			int osMajor, int osMinor,
-			int spMajor, int spMinor,
-			out int productType
-		);
-		private static string GetVersionString()
+		public class OSVersion
 		{
-			try { return Environment.OSVersion.VersionString; }
-			catch { return ""; }
-		}
-		private static string MapProductType(int productType)
-		{
-			switch (productType)
-			{
-				case 0x00000006: return "Business";
-				case 0x00000010: return "Home Basic";
-				case 0x00000012: return "Home Premium";
-				case 0x00000008: return "Enterprise";
-				case 0x00000048: return "Enterprise";
-				case 0x00000001: return "Ultimate";
-				case 0x00000030: return "Professional";
-				case 0x00000065: return "Education";
-				case 0x0000004C: return "Enterprise N";
-				case 0x00000045: return "Professional N";
-				default: return null;
-			}
-		}
-		private static string GetEdition(Version ver)
-		{
-			try
-			{
-				string productName = Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", null) as string;
-				if (!string.IsNullOrEmpty(productName))
-				{
-					if (productName.StartsWith("Windows")) productName = productName.Replace("Windows ", "");
+			private static readonly OperatingSystem osData = Environment.OSVersion;
 
-					if (productName.StartsWith("10") || productName.StartsWith("11") || productName.StartsWith("7") || productName.StartsWith("8") || productName.StartsWith("Vista"))
+			#region Helpers
+			[DllImport("kernel32.dll")]
+			private static extern bool GetProductInfo(
+				int osMajor, int osMinor,
+				int spMajor, int spMinor,
+				out int productType
+			);
+			private static string GetVersionString()
+			{
+				try { return Environment.OSVersion.VersionString; }
+				catch { return ""; }
+			}
+			private static string MapProductType(int productType)
+			{
+				switch (productType)
+				{
+					case 0x00000006: return "Business";
+					case 0x00000010: return "Home Basic";
+					case 0x00000012: return "Home Premium";
+					case 0x00000008: return "Enterprise";
+					case 0x00000048: return "Enterprise";
+					case 0x00000001: return "Ultimate";
+					case 0x00000030: return "Professional";
+					case 0x00000065: return "Education";
+					case 0x0000004C: return "Enterprise N";
+					case 0x00000045: return "Professional N";
+					default: return null;
+				}
+			}
+
+			private static string GetEdition()
+			{
+				try
+				{
+					string productName = Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", null) as string;
+					if (!string.IsNullOrEmpty(productName))
 					{
+						if (!productName.StartsWith("10") || !productName.StartsWith("11") || !productName.StartsWith("7") || !productName.StartsWith("8") || !productName.StartsWith("Vista"))
+							return null;
+
+						if (productName.StartsWith("Microsoft")) productName = productName.Replace("Microsoft ", "");
+						if (productName.StartsWith("Windows")) productName = productName.Replace("Windows ", "");
+
+						
 						string[] split = productName.Split(new[] { ' ' }, 2);
 						if (split.Length == 2)
 							return split[1];
 					}
 
-					return productName;
-				}
-
-				if (ver.Major >= 6)
-				{
-					if (GetProductInfo(ver.Major, ver.Minor, 0, 0, out int ptype))
+					if (osData.Version.Major >= 6)
 					{
-						return MapProductType(ptype);
+						if (GetProductInfo(osData.Version.Major, osData.Version.Minor, 0, 0, out int ptype))
+						{
+							return MapProductType(ptype);
+						}
 					}
 				}
+				catch { }
+				return null;
 			}
-			catch { }
-			return null;
-		}
-
-		public static string GetOS()
-		{
-			OperatingSystem os = Environment.OSVersion;
-			Version ver = os.Version;
-			PlatformID pid = os.Platform;
-
-			string name = null;
-
-			if (pid == PlatformID.Win32Windows) // Windows 95–ME
+			private static string GetOS()
 			{
-				switch (ver.Minor)
+				string name = null;
+
+				if (osData.Platform == PlatformID.Win32Windows) // Windows 95–ME
 				{
-					case 0:
-						name = "Windows 95";
-						break;
-					case 10:
-						name = "Windows 98";
-						if (GetVersionString().Contains("2222A"))
-							name += " Second Edition";
-						break;
-					case 90:
-						name = "Windows ME";
-						break;
-					default:
-						name = "Windows 9x";
-						break;
+					switch (osData.Version.Minor)
+					{
+						case 0:
+							name = "Windows 95";
+							break;
+						case 10:
+							name = "Windows 98";
+							if (GetVersionString().Contains("2222A"))
+								name += " Second Edition";
+							break;
+						case 90:
+							name = "Windows ME";
+							break;
+						default:
+							name = "Windows 9x";
+							break;
+					}
+					return name;
+				}
+
+				if (osData.Platform == PlatformID.Win32NT)
+				{
+					if (osData.Version.Major == 5)
+					{
+						switch (osData.Version.Minor)
+						{
+							case 0: name = "Windows 2000"; break;
+							case 1: name = "Windows XP"; break;
+							case 2: name = "Windows Server 2003"; break;
+						}
+					}
+					else if (osData.Version.Major == 6)
+					{
+						switch (osData.Version.Minor)
+						{
+							case 0: name = "Windows Vista"; break;
+							case 1: name = "Windows 7"; break;
+							case 2: name = "Windows 8"; break;
+							case 3: name = "Windows 8.1"; break;
+						}
+					}
+					else if (osData.Version.Major == 10)
+					{
+						name = "Windows 10";
+						if (osData.Version.Build >= 22000) name = "Windows 11";
+					}
 				}
 				return name;
 			}
+			#endregion
 
-			if (pid == PlatformID.Win32NT)
+			public static string Edition { get; private set; } = GetEdition();
+			public static string Product { get; private set; } = GetOS();
+
+			public static new string ToString()
 			{
-				if (ver.Major == 5)
-				{
-					switch (ver.Minor)
-					{
-						case 0: name = "Windows 2000"; break;
-						case 1: name = "Windows XP"; break;
-						case 2: name = "Windows Server 2003"; break;
-					}
-				}
-				else if (ver.Major == 6)
-				{
-					switch (ver.Minor)
-					{
-						case 0: name = "Windows Vista"; break;
-						case 1: name = "Windows 7"; break;
-						case 2: name = "Windows 8"; break;
-						case 3: name = "Windows 8.1"; break;
-					}
-				}
-				else if (ver.Major == 10)
-				{
-					name = "Windows 10";
-					if (ver.Build >= 22000) name = "Windows 11";
-				}
+				if (string.IsNullOrEmpty(Product)) return $"Unknown Windows ({osData.VersionString})";
+				else if (!string.IsNullOrEmpty(Edition)) return $"{Product} {Edition} ({osData.VersionString})";
+				else return $"{Product} ({osData.VersionString})";
 			}
-
-			// Try to get edition (Pro, Home, etc.)
-			string edition = GetEdition(ver);
-			if (!string.IsNullOrEmpty(edition))
-			{
-				name += " " + edition;
-			}
-
-			return name ?? "Unknown Windows";
 		}
 
-		public static bool KillAllBlox(string installLocation)
+		public static bool KillAllBlox(string installLocation = null)
 		{
 			string[] processToAxe = new string[] { "RobloxPlayerBeta", "NovarinPlayerBeta", "NovaHost", "RobloxStudioBeta", "NovarinStudioBeta", "NovarinRPCManager" };
 			foreach (string processName in processToAxe)
