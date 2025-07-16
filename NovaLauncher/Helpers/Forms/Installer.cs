@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -44,8 +44,9 @@ namespace NovaLauncher.Helpers.Forms
 				helperBase.instance.progressBar.Style = ProgressBarStyle.Marquee;
 				helperBase.instance.actionBtn.Enabled = false;
 			});
-			webClient.Dispose();
-			File.Delete(tempPath);
+			webClient?.CancelAsync();
+			if (!string.IsNullOrEmpty(tempPath) && File.Exists(tempPath)) File.Delete(tempPath);
+			Thread.Sleep(100);
 			helperBase.Close();
 		}
 
@@ -202,7 +203,7 @@ namespace NovaLauncher.Helpers.Forms
 					}
 					else if (!App.IsRunningFromInstall())
 					{
-						if (!File.Exists(Config.BaseInstallPath + @"\" + Config.AppEXE))
+						if (!File.Exists($@"{Config.BaseInstallPath}\{Config.AppEXE}"))
 						{
 							Update(launcherUpdateInfo);
 							return;
@@ -593,60 +594,34 @@ namespace NovaLauncher.Helpers.Forms
 						helperBase.instance.actionBtn.Enabled = true;
 					});
 
-					webClient = new WebClient();
-					webClient.Headers.Add("user-agent", Web.GetUserAgent());
-					updateInfo.DownloadedPath = Path.GetTempPath() + updateInfo.Name + ".zip";
+					updateInfo.DownloadedPath = $@"{Path.GetTempPath()}{updateInfo.Name}.zip";
 
-					Stopwatch downWatch = new Stopwatch();
-					webClient.DownloadProgressChanged += (ws, we) =>
-					{
-						helperBase.DoThingsWInvoke(() =>
-						{
-							helperBase.instance.progressLbl.Visible = true;
-
-							if (!downWatch.IsRunning) downWatch.Start();
-							int progress = we.ProgressPercentage;
-
-							double bytesRecv = we.BytesReceived;
-							double bytesTotal = we.TotalBytesToReceive;
-							double secsElp = downWatch.Elapsed.TotalSeconds;
-							double speed = secsElp > 0 ? bytesRecv / secsElp : 0;
-
-							double etaSecs = speed > 0 ? (bytesTotal - bytesRecv) / speed : 0;
-							TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
-							string etaStr = $"{eta.Hours:00}:{eta.Minutes:00}:{eta.Seconds:00}";
-
-							// Update everything!
-							helperBase.instance.progressLbl.Text = Config.Debug
-								? $"{progress}% ({Web.FormatBytes(bytesRecv)}/{Web.FormatBytes(bytesTotal)} | {Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}"
-								: $"{progress}% ({Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
-							helperBase.instance.progressBar.Value = progress;
-						});
-					};
-					webClient.DownloadFileCompleted += (ws, we) =>
+					void fileDone(object _, AsyncCompletedEventArgs we)
 					{
 						helperBase.DoThingsWInvoke(() => helperBase.instance.progressLbl.Visible = false);
 
-						if (we.Cancelled)
+						if (we != null)
 						{
-							Cancel(updateInfo.DownloadedPath);
-							return;
+							if (we.Cancelled)
+							{
+								Cancel(updateInfo.DownloadedPath);
+								return;
+							}
+							else if (we?.Error != null)
+							{
+								Program.logger.Log($"update: Failed to download: {we.Error.Message}\n{we.Error.StackTrace}");
+								MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
+								Cancel(updateInfo.DownloadedPath);
+								return;
+							}
 						}
-						else if (we.Error != null)
-						{
-							Program.logger.Log($"update: Failed to download: {we.Error.Message}\n{we.Error.StackTrace}");
-							MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "{ERROR}", we.Error.Message } }), Config.AppEXE, MessageBoxButtons.OK, MessageBoxIcon.Error);
-							Cancel(updateInfo.DownloadedPath);
-							return;
-						}
-
 						helperBase.CreateBackgroundTask(
 							(se, ev) =>
 							{
 								int checkCode = App.IsDownloadOK(updateInfo);
 								if (checkCode > 0)
 								{
-									MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", checkCode.ToString() } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
+									MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadCorrupted, new Dictionary<string, string>() { { "{CHECKSUMCODE}", $"Code {checkCode}" } }), updateInfo.Name, MessageBoxButtons.OK, MessageBoxIcon.Error);
 									Cancel(updateInfo.DownloadedPath);
 									return;
 								}
@@ -678,7 +653,39 @@ namespace NovaLauncher.Helpers.Forms
 								Install(updateInfo);
 							}
 						);
+					}
+
+
+					webClient = new WebClient();
+					webClient.Headers.Add("user-agent", Web.GetUserAgent());
+
+					Stopwatch downWatch = new Stopwatch();
+					webClient.DownloadProgressChanged += (ws, we) =>
+					{
+						helperBase.DoThingsWInvoke(() =>
+						{
+							helperBase.instance.progressLbl.Visible = true;
+
+							if (!downWatch.IsRunning) downWatch.Start();
+							int progress = we.ProgressPercentage;
+
+							double bytesRecv = we.BytesReceived;
+							double bytesTotal = we.TotalBytesToReceive;
+							double secsElp = downWatch.Elapsed.TotalSeconds;
+							double speed = secsElp > 0 ? bytesRecv / secsElp : 0;
+
+							double etaSecs = speed > 0 ? (bytesTotal - bytesRecv) / speed : 0;
+							TimeSpan eta = TimeSpan.FromSeconds(etaSecs);
+							string etaStr = $"{eta.Hours:00}:{eta.Minutes:00}:{eta.Seconds:00}";
+
+							// Update everything!
+							helperBase.instance.progressLbl.Text = Config.Debug
+								? $"{progress}% ({Web.FormatBytes(bytesRecv)}/{Web.FormatBytes(bytesTotal)} | {Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}"
+								: $"{progress}% ({Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
+							helperBase.instance.progressBar.Value = progress;
+						});
 					};
+					webClient.DownloadFileCompleted += (se, we) => fileDone(se, we);
 
 					try
 					{
@@ -905,14 +912,14 @@ namespace NovaLauncher.Helpers.Forms
 					if (updateInfo.IsLauncher)
 					{
 						LauncherUpgraded = true;
-						#if NET35
+#if NET35
 						if (Program.cliArgs.UpdateInfo != null && SwitchToNewNET())
 						{
 							Program.cliArgs.UpdateInfo = null;
 							PerformLauncherCheck();
 							return;
 						}
-						#endif
+#endif
 						PerformClientCheck();
 					}
 					else PerformClientStart();
@@ -920,6 +927,6 @@ namespace NovaLauncher.Helpers.Forms
 			);
 			return;
 		}
-		#endregion
+#endregion
 	}
 }
