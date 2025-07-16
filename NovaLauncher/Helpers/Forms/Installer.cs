@@ -581,7 +581,7 @@ namespace NovaLauncher.Helpers.Forms
 					if (!updateInfo.IsLauncher)
 					{
 						helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Waiting for Roblox process(es) to close...");
-						if (!App.KillAllBlox())
+						if (!App.KillAllBlox(updateInfo.InstallPath))
 						{
 							helperBase.Close();
 						}

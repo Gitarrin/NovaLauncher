@@ -531,7 +531,7 @@ namespace NovaLauncher.Helpers
 			return name ?? "Unknown Windows";
 		}
 
-		public static bool KillAllBlox()
+		public static bool KillAllBlox(string installLocation)
 		{
 			string[] processToAxe = new string[] { "RobloxPlayerBeta", "NovarinPlayerBeta", "NovaHost", "RobloxStudioBeta", "NovarinStudioBeta", "NovarinRPCManager" };
 			foreach (string processName in processToAxe)
@@ -540,7 +540,7 @@ namespace NovaLauncher.Helpers
 				foreach (Process process in processes)
 				{
 					// Don't kill Roblox that isn't ours.
-					if (!process.MainModule.FileName.StartsWith(Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
+					if (!process.MainModule.FileName.StartsWith(installLocation ?? Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
 
 					int waited = 0;
 					int stop_waiting = 20000;
