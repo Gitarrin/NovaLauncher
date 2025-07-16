@@ -70,7 +70,7 @@ namespace NovaLauncher.Helpers
 						string recvData = new StreamReader(response.GetResponseStream()).ReadToEnd();
 						if (
 							response.StatusCode == HttpStatusCode.OK &&
-							string.IsNullOrEmpty(recvData) &&
+							!string.IsNullOrEmpty(recvData) &&
 							recvData != " " &&
 							!recvData.Contains("Server Down") &&
 							!recvData.Contains("Error")
