@@ -21,6 +21,7 @@
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<IsPublishable>false</IsPublishable>
 		<Configurations>Debug;Release</Configurations>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
 		<PlatformTarget>AnyCPU</PlatformTarget>
