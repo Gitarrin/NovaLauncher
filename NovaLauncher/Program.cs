@@ -67,6 +67,9 @@ namespace NovaLauncher
 					? $"Yes, on {(Helpers.App.IsOlderWindows() ? "older" : "newer")} Windows"
 					: $"No and {(Helpers.App.IsRunningWine() ? "running" : "not running")} Wine"
 			));
+#if DEBUG
+			MessageBox.Show($"This is a development build of {Config.AppName}.");
+#endif
 
 			AppDomain.CurrentDomain.ProcessExit += (s, e) =>
 			{
