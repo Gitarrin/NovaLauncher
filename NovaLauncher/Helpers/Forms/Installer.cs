@@ -23,6 +23,7 @@ namespace NovaLauncher.Helpers.Forms
 		private GameClient gameClient;
 		private LatestLauncherInfo latestLauncherInfo;
 		private bool LauncherUpgraded = false;
+		private bool InstallCancelled = false;
 
 		public void Init(Base helperBaseF)
 		{
@@ -30,7 +31,6 @@ namespace NovaLauncher.Helpers.Forms
 
 			helperBase.instance.actionBtn.Click += (s, e) =>
 			{
-				webClient?.CancelAsync();
 				if (latestLauncherInfo?.Launcher?.Version == null) helperBase.Close();
 			};
 
@@ -39,12 +39,15 @@ namespace NovaLauncher.Helpers.Forms
 
 		private void Cancel(string tempPath)
 		{
+			if (!helperBase.instance.actionBtn.Enabled) return;
+
 			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, "Cancelling...");
 			helperBase.DoThingsWInvoke(() => {
 				helperBase.instance.progressBar.Style = ProgressBarStyle.Marquee;
 				helperBase.instance.actionBtn.Enabled = false;
 			});
-			webClient?.CancelAsync();
+			if (webClient != null && webClient.IsBusy) webClient?.CancelAsync();
+
 			if (!string.IsNullOrEmpty(tempPath) && File.Exists(tempPath)) File.Delete(tempPath);
 			Thread.Sleep(100);
 			helperBase.Close();
@@ -656,12 +659,8 @@ namespace NovaLauncher.Helpers.Forms
 						);
 					}
 
-
-					webClient = new WebClient();
-					webClient.Headers.Add("user-agent", Web.GetUserAgent());
-
 					Stopwatch downWatch = new Stopwatch();
-					webClient.DownloadProgressChanged += (ws, we) =>
+					void fileDownloading(object ws, DownloadProgressChangedEventArgs we)
 					{
 						helperBase.DoThingsWInvoke(() =>
 						{
@@ -685,7 +684,12 @@ namespace NovaLauncher.Helpers.Forms
 								: $"{progress}% ({Web.FormatBytes(speed)}/s)  |  ETA: {etaStr}";
 							helperBase.instance.progressBar.Value = progress;
 						});
-					};
+					}
+
+
+					webClient = new WebClient();
+					webClient.Headers.Add("user-agent", Web.GetUserAgent());
+					webClient.DownloadProgressChanged += (ws, we) => fileDownloading(ws, we);
 					webClient.DownloadFileCompleted += (se, we) => fileDone(se, we);
 
 					try
@@ -696,6 +700,8 @@ namespace NovaLauncher.Helpers.Forms
 					{
 						Program.logger.Log($"update: Failed to start download: {ex.Message}\n{ex.StackTrace}");
 						MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadStartFail));
+						webClient.DownloadProgressChanged -= fileDownloading;
+						webClient.DownloadFileCompleted -= fileDone;
 						Cancel(updateInfo.DownloadedPath);
 					}
 				},
@@ -772,7 +778,11 @@ namespace NovaLauncher.Helpers.Forms
 		{
 			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Installing {updateInfo.Name}...");
 			helperBase.instance.progressBar.Style = ProgressBarStyle.Marquee;
-			helperBase.instance.actionBtn.Enabled = false;
+
+			helperBase.instance.actionBtn.Click += (s, e) =>
+			{
+				InstallCancelled = true;
+			};
 
 			helperBase.CreateBackgroundTask(
 				(s, e) =>
@@ -780,6 +790,12 @@ namespace NovaLauncher.Helpers.Forms
 					Thread.Sleep(500);
 					try
 					{
+						if (InstallCancelled)
+						{
+							e.Cancel = true;
+							return;
+						}
+
 						if (updateInfo.IsLauncher)
 						{
 							if (Program.cliArgs.UpdateInfo == null)
@@ -795,6 +811,12 @@ namespace NovaLauncher.Helpers.Forms
 									}
 								}
 								else Directory.CreateDirectory(updateInfo.InstallPath);
+
+								if (InstallCancelled)
+								{
+									e.Cancel = true;
+									return;
+								}
 
 								if (updateInfo.IsUpgrade)
 								{
@@ -852,6 +874,12 @@ namespace NovaLauncher.Helpers.Forms
 								// parts[2] = compressedSize
 								// parts[3] = uncompressedSize
 								string[] parts = sizeData.Split('|');
+								if (InstallCancelled || helperBase.instance.progressLbl.IsDisposed || !helperBase.instance.progressLbl.IsHandleCreated)
+								{
+									e.Cancel = true;
+									return;
+								}
+
 								helperBase.DoThingsWInvoke(() =>
 									helperBase.instance.progressLbl.Text = string.Join(" ", new string[] {
 										$"Processing ({parts[0]}/{parts[1]}):",
@@ -872,6 +900,13 @@ namespace NovaLauncher.Helpers.Forms
 				},
 				(s, e) =>
 				{
+					if (e.Cancelled)
+					{
+						if (File.Exists(updateInfo.DownloadedPath)) File.Delete(updateInfo.DownloadedPath);
+
+						Cancel(updateInfo.InstallPath);
+						return;
+					}
 					Exception exc = e.Result is Exception ? (Exception)e.Result : e.Error;
 					if (exc != null)
 					{
@@ -915,6 +950,8 @@ namespace NovaLauncher.Helpers.Forms
 						}
 					};
 
+
+					helperBase.instance.actionBtn.Click -= (bS, bE) => InstallCancelled = true;
 
 					Program.logger.Log($"install: Completed {(updateInfo.IsUpgrade ? "upgrade" : "install")} of {updateInfo.Name}.");
 					if (updateInfo.IsLauncher)

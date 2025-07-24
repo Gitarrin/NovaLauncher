@@ -27,9 +27,15 @@ namespace NovaLauncher.Helpers.Forms
 
 		internal void DoThingsWInvoke(Action f, Control c = null)
 		{
-			if (c != null && c.InvokeRequired) c.Invoke(f);
-			else if (instance != null && instance.InvokeRequired) instance.Invoke(f);
-			else f();
+			if (c != null && (c.IsDisposed || !c.IsHandleCreated)) return;
+
+			try
+			{
+				if (c != null && c.InvokeRequired) c.Invoke(f);
+				else if (instance != null && instance.InvokeRequired) instance.Invoke(f);
+				else f();
+			}
+			catch (ObjectDisposedException) { }
 		}
 
 		internal void CreateBackgroundTask(DoWorkEventHandler doWorkHandler, RunWorkerCompletedEventHandler finishWorkHandler)

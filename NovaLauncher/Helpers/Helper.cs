@@ -97,7 +97,7 @@ namespace NovaLauncher.Helpers
 			}
 
 			// Couldn't find one :(, assume blocked/DNS issue/all servers down/etc.
-			Program.logger.Log($"serverSelector: Out of servers to select. Bailing...!");
+			if (string.IsNullOrEmpty(Config.SelectedServer)) Program.logger.Log($"serverSelector: Out of servers to select. Bailing...!");
 			return $"{(string.IsNullOrEmpty(Config.SelectedServer) ? "NOT " : "")}OK\n{string.Join("\n", serverResponses.ToArray())}";
 		}
 
