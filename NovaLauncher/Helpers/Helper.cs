@@ -552,6 +552,9 @@ namespace NovaLauncher.Helpers
 					// Don't kill Roblox that isn't ours.
 					if (!process.MainModule.FileName.StartsWith(installLocation ?? Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
 
+					Program.logger.Log($"KillAllBlox: installLocation: {installLocation}");
+					Program.logger.Log($"KillAllBlox: Waiting for {processName} to close from {installLocation ?? Config.BaseInstallPath}");
+
 					int waited = 0;
 					int stop_waiting = 20000;
 					while (true)
@@ -561,6 +564,7 @@ namespace NovaLauncher.Helpers
 						Thread.Sleep(1000);
 						process.CloseMainWindow(); // Try to gracefully exit ROBLOX process(es)
 						waited += 1000;
+						Program.logger.Log($"KillAllBlox: [{processName}] - waiting: {waited}/{stop_waiting}");
 					}
 					if (waited >= stop_waiting || !process.HasExited)
 					{
@@ -568,6 +572,7 @@ namespace NovaLauncher.Helpers
 						MessageBox.Show(Error.GetErrorMsg(Error.Installer.KillTimeout), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 						return false;
 					}
+					continue;
 				}
 			}
 			return true;
