@@ -425,6 +425,7 @@ namespace NovaLauncher.Helpers.Forms
 
 					if (Program.cliArgs.UpdateClient || gameClient.Version == null)
 					{
+						Program.logger.Log($"clientCheck: gameClient needed: c: {(Program.cliArgs.UpdateClient ? "forcing update" : "null")} s: {clientUpdateInfo.Version}");
 						Update(clientUpdateInfo);
 						return;
 					}
@@ -506,7 +507,7 @@ namespace NovaLauncher.Helpers.Forms
 					};
 
 					process.Start();
-					helperBase.instance.progressBar.Value = 25;
+					helperBase.DoThingsWInvoke(() => helperBase.instance.progressBar.Value = 25);
 
 					int waited = 0;
 					int alert_waiting = 45000;
@@ -538,12 +539,12 @@ namespace NovaLauncher.Helpers.Forms
 						helperBase.Close();
 						return;
 					}
-					helperBase.instance.progressBar.Value = 50;
+					helperBase.DoThingsWInvoke(() => helperBase.instance.progressBar.Value = 50);
 
 					// Always try to bring to foreground.
 					try { App.BringToFront(process.MainWindowTitle); }
 					catch { };
-					helperBase.instance.progressBar.Value = 75;
+					helperBase.DoThingsWInvoke(() => helperBase.instance.progressBar.Value = 75);
 
 					// Discord RPC
 					if (useRPC && File.Exists($@"{Config.BaseInstallPath}\NovarinRPCManager.exe"))
@@ -564,7 +565,7 @@ namespace NovaLauncher.Helpers.Forms
 				},
 				(s, e) =>
 				{
-					helperBase.instance.progressBar.Value = 100;
+					helperBase.DoThingsWInvoke(() => helperBase.instance.progressBar.Value = 100);
 					helperBase.Close();
 					return;
 				}
@@ -582,16 +583,19 @@ namespace NovaLauncher.Helpers.Forms
 				{
 					Thread.Sleep(150);
 
+					helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
+					Thread.Sleep(150);
 					if (!updateInfo.IsLauncher)
 					{
 						helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Waiting for Roblox process(es) to close...");
 						if (!App.KillAllBlox(updateInfo.InstallPath))
 						{
 							helperBase.Close();
+							return;
 						}
+						helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
 					}
 
-					helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
 					helperBase.DoThingsWInvoke(() =>
 					{
 						helperBase.instance.progressBar.Style = ProgressBarStyle.Continuous;
