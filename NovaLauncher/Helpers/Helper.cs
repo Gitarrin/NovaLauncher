@@ -450,12 +450,12 @@ namespace NovaLauncher.Helpers
 					string productName = Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", null) as string;
 					if (!string.IsNullOrEmpty(productName))
 					{
-						if (!productName.StartsWith("10") || !productName.StartsWith("11") || !productName.StartsWith("7") || !productName.StartsWith("8") || !productName.StartsWith("Vista"))
-							return null;
-
 						if (productName.StartsWith("Microsoft")) productName = productName.Replace("Microsoft ", "");
 						if (productName.StartsWith("Windows")) productName = productName.Replace("Windows ", "");
 
+						if (!productName.StartsWith("10") && !productName.StartsWith("11") && !productName.StartsWith("7") && !productName.StartsWith("8") && !productName.StartsWith("Vista"))
+							return null;
+						
 						
 						string[] split = productName.Split(new[] { ' ' }, 2);
 						if (split.Length == 2)
