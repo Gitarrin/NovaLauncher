@@ -138,6 +138,7 @@ namespace NovaLauncher.Helpers
 			}
 
 			// Actually extract
+			ZipConstants.DefaultCodePage = 850;
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn))) {
 				ZipEntry entry;
 				while ((entry = zipStream.GetNextEntry()) != null)
@@ -182,6 +183,7 @@ namespace NovaLauncher.Helpers
 
 		public static void ExtractSingleFileFromZip(string archiveFilenameIn, string outFolder, string fileNameToExtract)
 		{
+			ZipConstants.DefaultCodePage = 850;
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
 			{
 				ZipEntry entry;
