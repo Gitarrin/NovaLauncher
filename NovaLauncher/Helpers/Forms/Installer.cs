@@ -590,7 +590,7 @@ namespace NovaLauncher.Helpers.Forms
 						helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Waiting for Roblox process(es) to close...");
 						if (!App.KillAllBlox(updateInfo.InstallPath))
 						{
-							helperBase.Close();
+							e.Result = "close";
 							return;
 						}
 						helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"{(updateInfo.IsUpgrade ? "Upgrading" : "Downloading the latest")} {updateInfo.Name}...");
@@ -707,9 +707,23 @@ namespace NovaLauncher.Helpers.Forms
 						webClient.DownloadProgressChanged -= fileDownloading;
 						webClient.DownloadFileCompleted -= fileDone;
 						Cancel(updateInfo.DownloadedPath);
+						e.Result = "close_nomsg";
 					}
 				},
-				(s, e) => { }
+				(s, e) =>
+				{
+
+					if (e.Error != null || e.Result != null)
+					{
+						string err = e.Error.Message != null ? e.Error.ToString() : "";
+						string res = e.Result != null ? e.Result.ToString() : "";
+
+						if (res != "close_nomsg")
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.DownloadFailed, new Dictionary<string, string>() { { "error", err }, { "res", res } }));
+
+						helperBase.Close();
+					}
+				}
 			);
 		}
 

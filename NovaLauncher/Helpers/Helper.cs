@@ -543,6 +543,8 @@ namespace NovaLauncher.Helpers
 
 		public static bool KillAllBlox(string installLocation = null)
 		{
+			try
+			{
 			string[] processToAxe = new string[] { "RobloxPlayerBeta", "NovarinPlayerBeta", "NovaHost", "RobloxStudioBeta", "NovarinStudioBeta", "NovarinRPCManager" };
 			foreach (string processName in processToAxe)
 			{
@@ -552,7 +554,6 @@ namespace NovaLauncher.Helpers
 					// Don't kill Roblox that isn't ours.
 					if (!process.MainModule.FileName.StartsWith(installLocation ?? Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
 
-					Program.logger.Log($"KillAllBlox: installLocation: {installLocation}");
 					Program.logger.Log($"KillAllBlox: Waiting for {processName} to close from {installLocation ?? Config.BaseInstallPath}");
 
 					int waited = 0;
@@ -576,6 +577,13 @@ namespace NovaLauncher.Helpers
 				}
 			}
 			return true;
+			} catch (Exception Ex)
+			{
+				if (DialogResult.Yes == MessageBox.Show($"Error while waiting for all process(es) to close!\nError: {Ex.Message}\nPlease report!\n\nTo continue, hit Yes. To cancel, hit No.", Config.AppName, MessageBoxButtons.YesNo))
+					return true;
+				else
+					return false;
+			}
 		}
 	}
 	#endregion
