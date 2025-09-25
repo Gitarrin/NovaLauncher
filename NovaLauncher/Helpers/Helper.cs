@@ -139,7 +139,8 @@ namespace NovaLauncher.Helpers
 
 			// Actually extract
 			ZipConstants.DefaultCodePage = 850;
-			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn))) {
+			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
+			{
 				ZipEntry entry;
 				while ((entry = zipStream.GetNextEntry()) != null)
 				{
@@ -174,7 +175,8 @@ namespace NovaLauncher.Helpers
 						{
 							if (App.CreateChecksum(filePath) != App.CreateChecksum(filePathTmp)) File.Move(filePathTmp, filePath);
 							else File.Delete(filePathTmp);
-						} else File.Move(filePathTmp, filePath);
+						}
+						else File.Move(filePathTmp, filePath);
 					}
 				}
 				zipStream.Close();
@@ -345,7 +347,7 @@ namespace NovaLauncher.Helpers
 		public static string CreateChecksum(string filePath)
 		{
 			string checksum = null;
-			
+
 			SHA256 sha256 = SHA256.Create();
 			byte[] checksumB;
 
@@ -413,133 +415,110 @@ namespace NovaLauncher.Helpers
 
 		public class OSVersion
 		{
-			private static readonly OperatingSystem osData = Environment.OSVersion;
+			#region Native Methods
+			[DllImport("ntdll.dll", SetLastError = true)]
+			private static extern int RtlGetVersion(ref OSVERSIONINFOEX lpVersionInformation);
 
-			#region Helpers
-			[DllImport("kernel32.dll")]
-			private static extern bool GetProductInfo(
-				int osMajor, int osMinor,
-				int spMajor, int spMinor,
-				out int productType
-			);
-			private static string GetVersionString()
+			[DllImport("ntdll.dll", CallingConvention = CallingConvention.Cdecl)]
+			private static extern IntPtr wine_get_version();
+			#endregion
+
+			#region Structs
+			[StructLayout(LayoutKind.Sequential)]
+			private struct OSVERSIONINFOEX
 			{
-				try { return Environment.OSVersion.VersionString; }
-				catch { return ""; }
-			}
-			private static string MapProductType(int productType)
-			{
-				switch (productType)
-				{
-					case 0x00000006: return "Business";
-					case 0x00000010: return "Home Basic";
-					case 0x00000012: return "Home Premium";
-					case 0x00000008: return "Enterprise";
-					case 0x00000048: return "Enterprise";
-					case 0x00000001: return "Ultimate";
-					case 0x00000030: return "Professional";
-					case 0x00000065: return "Education";
-					case 0x0000004C: return "Enterprise N";
-					case 0x00000045: return "Professional N";
-					default: return null;
-				}
-			}
-
-			private static string GetEdition()
-			{
-				try
-				{
-					string productName = Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", null) as string;
-					if (!string.IsNullOrEmpty(productName))
-					{
-						if (productName.StartsWith("Microsoft")) productName = productName.Replace("Microsoft ", "");
-						if (productName.StartsWith("Windows")) productName = productName.Replace("Windows ", "");
-
-						if (!productName.StartsWith("10") && !productName.StartsWith("11") && !productName.StartsWith("7") && !productName.StartsWith("8") && !productName.StartsWith("Vista"))
-							return null;
-						
-						
-						string[] split = productName.Split(new[] { ' ' }, 2);
-						if (split.Length == 2)
-							return split[1];
-					}
-
-					if (osData.Version.Major >= 6)
-					{
-						if (GetProductInfo(osData.Version.Major, osData.Version.Minor, 0, 0, out int ptype))
-						{
-							return MapProductType(ptype);
-						}
-					}
-				}
-				catch { }
-				return null;
-			}
-			private static string GetOS()
-			{
-				string name = null;
-
-				if (osData.Platform == PlatformID.Win32Windows) // Windows 95–ME
-				{
-					switch (osData.Version.Minor)
-					{
-						case 0:
-							name = "Windows 95";
-							break;
-						case 10:
-							name = "Windows 98";
-							if (GetVersionString().Contains("2222A"))
-								name += " Second Edition";
-							break;
-						case 90:
-							name = "Windows ME";
-							break;
-						default:
-							name = "Windows 9x";
-							break;
-					}
-					return name;
-				}
-
-				if (osData.Platform == PlatformID.Win32NT)
-				{
-					if (osData.Version.Major == 5)
-					{
-						switch (osData.Version.Minor)
-						{
-							case 0: name = "Windows 2000"; break;
-							case 1: name = "Windows XP"; break;
-							case 2: name = "Windows Server 2003"; break;
-						}
-					}
-					else if (osData.Version.Major == 6)
-					{
-						switch (osData.Version.Minor)
-						{
-							case 0: name = "Windows Vista"; break;
-							case 1: name = "Windows 7"; break;
-							case 2: name = "Windows 8"; break;
-							case 3: name = "Windows 8.1"; break;
-						}
-					}
-					else if (osData.Version.Major == 10)
-					{
-						name = "Windows 10";
-						if (osData.Version.Build >= 22000) name = "Windows 11";
-					}
-				}
-				return name;
+				public int dwOSVersionInfoSize;
+				public int dwMajorVersion;
+				public int dwMinorVersion;
+				public int dwBuildNumber;
+				public int dwPlatformId;
+				[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+				public string szCSDVersion;
 			}
 			#endregion
 
-			public static string Edition { get; private set; } = GetEdition();
-			public static string Product { get; private set; } = GetOS();
+			private class OSBuild
+			{
+				public int Major { get; set; }
+				public int Minor { get; set; }
+				public int Build { get; set; }
+
+				public OSBuild(int ma, int mi, int bu)
+				{
+					Major = ma;
+					Minor = mi;
+					Build = bu;
+				}
+			}
+
+			private static OSBuild GetWinVer()
+			{
+				try
+				{
+					OSVERSIONINFOEX os = new OSVERSIONINFOEX()
+					{
+						dwOSVersionInfoSize = Marshal.SizeOf(typeof(OSVERSIONINFOEX))
+					};
+					if (RtlGetVersion(ref os) == 0)
+						return new OSBuild(os.dwMajorVersion, os.dwMinorVersion, os.dwBuildNumber);
+				}
+				catch { }
+				Version v = Environment.OSVersion.Version;
+				return new OSBuild(v.Major, v.Minor, v.Build);
+			}
+
+			private static string GetWinName(OSBuild v)
+			{
+				if (v.Major == 10)
+				{
+					if (v.Build >= 22000) return "Windows 11";
+					return "Windows 10";
+				}
+				else if (v.Major == 6)
+				{
+					switch (v.Minor)
+					{
+						case 0: return "Windows Vista";
+						case 1: return "Windows 7";
+						case 2: return "Windows 8";
+						case 3: return "Windows 8.1";
+					}
+				}
+				else if (v.Major == 5)
+				{
+					switch (v.Minor)
+					{
+						case 0: return "Windows 2000";
+						case 1: return "Windows XP";
+						case 2: return "Windows Server 2003";
+					}
+				}
+				return "Windows";
+			}
 
 			public static new string ToString()
 			{
-				if (string.IsNullOrEmpty(Product)) return $"Unknown Windows ({osData.VersionString})";
-				else if (!string.IsNullOrEmpty(Edition)) return $"{Product} {Edition} ({osData.VersionString})";
-				else return $"{Product} ({osData.VersionString})";
+				PlatformID pid = Environment.OSVersion.Platform;
+				if (pid == PlatformID.Win32NT)
+				{
+					var ver = GetWinVer();
+					string family = GetWinName(ver);
+
+					string full = family;
+
+					if (IsRunningWine())
+						full = $"Wine ({full})";
+
+					return $"{full} (Build {ver.Build})";
+				}
+				else if (Type.GetType("Mono.Runtime") != null)
+				{
+					return "Mono (possibly Linux/macOS)";
+				}
+				else
+				{
+					return "Unknown OS";
+				}
 			}
 		}
 
@@ -547,39 +526,40 @@ namespace NovaLauncher.Helpers
 		{
 			try
 			{
-			string[] processToAxe = new string[] { "RobloxPlayerBeta", "NovarinPlayerBeta", "NovaHost", "RobloxStudioBeta", "NovarinStudioBeta", "NovarinRPCManager" };
-			foreach (string processName in processToAxe)
-			{
-				Process[] processes = Process.GetProcessesByName(processName);
-				foreach (Process process in processes)
+				string[] processToAxe = new string[] { "RobloxPlayerBeta", "NovarinPlayerBeta", "NovaHost", "RobloxStudioBeta", "NovarinStudioBeta", "NovarinRPCManager" };
+				foreach (string processName in processToAxe)
 				{
-					// Don't kill Roblox that isn't ours.
-					if (!process.MainModule.FileName.StartsWith(installLocation ?? Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
-
-					Program.logger.Log($"KillAllBlox: Waiting for {processName} to close from {installLocation ?? Config.BaseInstallPath}");
-
-					int waited = 0;
-					int stop_waiting = 20000;
-					while (true)
+					Process[] processes = Process.GetProcessesByName(processName);
+					foreach (Process process in processes)
 					{
-						if (process.HasExited) break; // The thing closed!
-						if (waited >= stop_waiting) break; // Timeout
-						Thread.Sleep(1000);
-						process.CloseMainWindow(); // Try to gracefully exit ROBLOX process(es)
-						waited += 1000;
-						Program.logger.Log($"KillAllBlox: [{processName}] - waiting: {waited}/{stop_waiting}");
+						// Don't kill Roblox that isn't ours.
+						if (!process.MainModule.FileName.StartsWith(installLocation ?? Config.BaseInstallPath, StringComparison.OrdinalIgnoreCase)) continue;
+
+						Program.logger.Log($"KillAllBlox: Waiting for {processName} to close from {installLocation ?? Config.BaseInstallPath}");
+
+						int waited = 0;
+						int stop_waiting = 20000;
+						while (true)
+						{
+							if (process.HasExited) break; // The thing closed!
+							if (waited >= stop_waiting) break; // Timeout
+							Thread.Sleep(1000);
+							process.CloseMainWindow(); // Try to gracefully exit ROBLOX process(es)
+							waited += 1000;
+							Program.logger.Log($"KillAllBlox: [{processName}] - waiting: {waited}/{stop_waiting}");
+						}
+						if (waited >= stop_waiting || !process.HasExited)
+						{
+							Program.logger.Log($"KillAllBlox: Failed to close because: {(waited >= stop_waiting ? "timeout" : "process not exited")}");
+							MessageBox.Show(Error.GetErrorMsg(Error.Installer.KillTimeout), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+							return false;
+						}
+						continue;
 					}
-					if (waited >= stop_waiting || !process.HasExited)
-					{
-						Program.logger.Log($"KillAllBlox: Failed to close because: {(waited >= stop_waiting ? "timeout" : "process not exited")}");
-						MessageBox.Show(Error.GetErrorMsg(Error.Installer.KillTimeout), Config.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-						return false;
-					}
-					continue;
 				}
+				return true;
 			}
-			return true;
-			} catch (Exception Ex)
+			catch (Exception Ex)
 			{
 				if (DialogResult.Yes == MessageBox.Show($"Error while waiting for all process(es) to close!\nError: {Ex.Message}\nPlease report!\n\nTo continue, hit Yes. To cancel, hit No.", Config.AppName, MessageBoxButtons.YesNo))
 					return true;
