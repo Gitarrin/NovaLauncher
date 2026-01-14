@@ -14,7 +14,7 @@ namespace NovaLauncher
 		public static string AppShortName = "Novarin (test)";
 		public static string AppName = $"{AppShortName} Launcher (test)";
 		public static string AppEXE = "NovaLauncher.exe";
-		public static string AppProtocol = AppShortName.ToLower();
+		public static string AppProtocol = "novarintest";
 		public static bool Debug = false;
 
 		public static string BaseInstallPath = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\{AppShortName}";
