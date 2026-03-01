@@ -1,4 +1,7 @@
-﻿using System;
+﻿using ICSharpCode.SharpZipLib.Zip;
+using Microsoft.Win32;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,11 +10,9 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ICSharpCode.SharpZipLib.Zip;
-using Newtonsoft.Json;
 
 namespace NovaLauncher.Helpers
 {
@@ -125,6 +126,16 @@ namespace NovaLauncher.Helpers
 			int currentFile = 0;
 			int totalFiles = 0;
 
+			try
+			{
+				Encoding.GetEncoding(850);
+				ZipConstants.DefaultCodePage = 850;
+			}
+			catch
+			{
+				ZipConstants.DefaultCodePage = Encoding.Default.CodePage;
+			}
+
 			// Get total files to process
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
 			{
@@ -138,7 +149,6 @@ namespace NovaLauncher.Helpers
 			}
 
 			// Actually extract
-			ZipConstants.DefaultCodePage = 850;
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
 			{
 				ZipEntry entry;
@@ -185,7 +195,16 @@ namespace NovaLauncher.Helpers
 
 		public static void ExtractSingleFileFromZip(string archiveFilenameIn, string outFolder, string fileNameToExtract)
 		{
-			ZipConstants.DefaultCodePage = 850;
+			try
+			{
+				Encoding.GetEncoding(850);
+				ZipConstants.DefaultCodePage = 850;
+			}
+			catch
+			{
+				ZipConstants.DefaultCodePage = Encoding.Default.CodePage;
+			}
+
 			using (ZipInputStream zipStream = new ZipInputStream(File.OpenRead(archiveFilenameIn)))
 			{
 				ZipEntry entry;
