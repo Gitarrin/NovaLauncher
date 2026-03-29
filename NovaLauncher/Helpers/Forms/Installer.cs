@@ -272,7 +272,10 @@ namespace NovaLauncher.Helpers.Forms
 					{
 						// Okay, we weren't launching a client. We'll stop here.
 						if (LauncherUpgraded)
+						{
 							helperBase.launcherMessage.Init(helperBase, "NOVARIN IS SUCCESSFULLY INSTALLED!", "Click the 'Join' button on any game to join the action!", "OK");
+							helperBase.instance.actionBtn.Click += (se, ee) => helperBase.Close();
+						}
 						else
 						{
 							helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Opening {Config.AppShortName}...");
@@ -455,6 +458,8 @@ namespace NovaLauncher.Helpers.Forms
 		private void PerformClientStart()
 		{
 			Program.logger.Log($"clientStart: Launch {gameClient.Name} as {launchData.LaunchType}");
+			//if (new Random().Next(0 , 100) < 1) helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Blowing up {gameClient.Name}...");
+			//else helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Starting {gameClient.Name}...");
 			helperBase.UpdateTextWithLog(helperBase.instance.statusLbl, $"Starting {gameClient.Name}...");
 			helperBase.instance.actionBtn.Enabled = false;
 			helperBase.instance.actionBtn.Visible = false;
